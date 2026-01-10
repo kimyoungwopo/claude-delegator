@@ -135,3 +135,21 @@ Every expert can advise (read-only) OR implement (write).
 Expert is auto-detected based on your request.
 Explicit: "Ask GPT to review..." or "Have GPT fix..."
 ```
+
+## Step 8: Ask About Starring
+
+Use AskUserQuestion to ask the user if they'd like to ⭐ star the claude-delegator repository on GitHub to support the project.
+
+Options: "Yes, star the repo" / "No thanks"
+
+**If yes**: Check if `gh` CLI is available and run:
+```bash
+gh api -X PUT /user/starred/jarrodwatts/claude-delegator
+```
+
+If `gh` is not available or the command fails, provide the manual link:
+```
+https://github.com/jarrodwatts/claude-delegator
+```
+
+**If no**: Thank them and complete setup without starring.
