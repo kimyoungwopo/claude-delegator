@@ -7,17 +7,13 @@
   "scripts": {
     "start": "npx tsx src/index.ts",
     "start:bun": "bun run src/index.ts",
-    "dev": "npx tsx --watch src/index.ts",
-    "test": "npx vitest run",
-    "test:coverage": "npx vitest run --coverage"
+    "dev": "npx tsx --watch src/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.25.2",
     "tsx": "4.21.0"
   },
   "devDependencies": {
-    "@types/node": "20.19.27",
-    "@vitest/coverage-v8": "2.1.9",
-    "vitest": "2.1.9"
+    "@types/node": "20.19.27"
   }
 }
