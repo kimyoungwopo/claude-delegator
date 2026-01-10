@@ -4,90 +4,91 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Claude Code plugin that provides external AI models (GPT via Codex, Gemini) as native MCP tool providers. Liberal delegation to models that excel at specific tasks.
+A Claude Code plugin that provides GPT (via Codex CLI) as a native MCP tool for strategic consultation. Use sparingly for complex architecture, debugging escalation, and code review.
 
 ## Development Commands
 
 ```bash
-# Install dependencies (use any package manager)
-cd servers/gemini-mcp && npm install  # or bun/yarn
-
-# Run MCP server locally
-npx tsx servers/gemini-mcp/src/index.ts  # Node.js
-bun run servers/gemini-mcp/src/index.ts  # Bun
-
 # Test plugin installation
 /claude-delegator:setup
+
+# Check status
+/claude-delegator:configure status
 ```
 
-No build step required - runs TypeScript directly via tsx or Bun.
+No build step, no dependencies. Uses Codex CLI's native MCP server.
 
 ## Architecture
 
 ### Data Flow
 
 ```
-User Request → Claude Code → [Phase 0: Delegation Check]
+User Request → Claude Code → [Match oracle trigger?]
                                     ↓
-                    [Match trigger?] → Yes → MCP tool call
-                                              ↓
-                    mcp__codex__codex (GPT) ──or── mcp__gemini__gemini
-                                              ↓
-                    [Role prompt injected] → External CLI spawned
-                                              ↓
-                    [Response] → Claude synthesizes (never raw passthrough)
+                    Yes → mcp__codex__codex (GPT)
+                                    ↓
+                    [Role prompt via developer-instructions]
+                                    ↓
+                    [Response] → Claude synthesizes
 ```
 
 ### Component Relationships
 
 | Component | Location | Installed To | Purpose |
 |-----------|----------|--------------|---------|
-| MCP Server | `servers/gemini-mcp/src/index.ts` | Runtime (stdio) | Wraps Gemini CLI as MCP |
 | Rules | `rules/*.md` | `~/.claude/rules/delegator/` | Teaches when/how to delegate |
-| Prompts | `prompts/*.md` | Read at runtime | Shapes external model behavior |
+| Prompts | `prompts/*.md` | Referenced in delegation | Shapes GPT behavior |
 | Commands | `commands/*.md` | Plugin namespace | `/setup`, `/configure` |
+| Config | `config/providers.json` | Read at runtime | Provider configuration |
 
-### MCP Server Internals (`servers/gemini-mcp/src/`)
+### Roles
 
-Entry point: `index.ts` → calls `startServer()` from `server.ts`
+| Role | Purpose | When to Use |
+|------|---------|-------------|
+| `oracle` | Strategic advisor | Architecture, debugging escalation, code review, security |
+| `momus` | Plan reviewer | Validate work plans before execution |
 
-Key functions in `server.ts`:
-- `buildArgs()`: Constructs CLI args, injects role prompts
-- `runGemini()`: Spawns process via Node.js `child_process.spawn()`, handles timeout
-- `activeProcesses` Set: Tracks processes for cleanup on SIGINT/SIGTERM
-- `loadRolePrompt()`: Reads prompt from `prompts/{role}.md`
-
-The `-reply` tool does NOT inject roles - it continues existing conversations.
-
-**Runtime compatibility**: Works with Node.js (via `npx tsx`), Bun, or any Node-compatible runtime.
-
-### Role → Provider Mapping
-
-| Role | Provider | Trigger Patterns |
-|------|----------|------------------|
-| `oracle` | GPT (Codex) | Architecture, security, debugging failures |
-| `librarian` | Gemini | Research, docs, "how do I use X" |
-| `frontend-engineer` | Gemini | UI/UX code generation |
-| `explore` | Gemini | Codebase navigation |
+> Role prompts adapted from [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)
 
 ## Key Design Decisions
 
-1. **MCP over subagents** - External models as tool providers, not wrapped agents
-2. **7-section delegation format** - TASK, EXPECTED OUTCOME, CONTEXT, CONSTRAINTS, MUST DO, MUST NOT DO, OUTPUT FORMAT
-3. **Response synthesis mandatory** - Never show raw external output
-4. **Role injection** - System prompts shape model behavior per task type
+1. **Native MCP only** - Codex has `codex mcp-server`, no wrapper needed
+2. **Focused scope** - Oracle for strategic decisions, not everything
+3. **Response synthesis** - Claude interprets GPT output, never raw passthrough
+4. **Pragmatic minimalism** - Favor simplest solution that works
 
-## Adding a New Provider
+## When to Invoke
 
-1. Check if CLI has native MCP support (like `codex mcp-server`)
-2. If not, create `servers/your-provider-mcp/src/index.ts` following gemini-mcp pattern
-3. Add to `config/providers.json` with CLI, MCP config, roles, strengths
-4. Add role prompts to `prompts/` if needed
-5. Update `commands/setup.md` to check for the new CLI
+**DO use for**:
+- Architecture decisions with long-term impact
+- After 2+ failed fix attempts
+- Security/performance concerns
+- Multi-system tradeoffs
+- Code review for significant changes
 
-## Code Style
+**DON'T use for**:
+- Simple file operations
+- First attempt at any fix
+- Trivial decisions
+- Research or documentation
+- Frontend/UI generation
 
-- No `any` without justification
-- No `@ts-ignore` or `@ts-expect-error`
-- Prefer Bun APIs over Node.js equivalents
-- Pin dependency versions exactly in production
+## Plugin Structure
+
+```
+claude-delegator/
+├── commands/
+│   ├── setup.md       # /claude-delegator:setup
+│   └── configure.md   # /claude-delegator:configure
+├── rules/
+│   ├── orchestration.md
+│   ├── triggers.md
+│   ├── model-selection.md
+│   └── delegation-format.md
+├── prompts/
+│   ├── oracle.md      # Strategic advisor prompt
+│   ├── momus.md       # Plan reviewer prompt
+│   └── README.md
+└── config/
+    └── providers.json
+```

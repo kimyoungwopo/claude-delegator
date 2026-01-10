@@ -2,7 +2,7 @@
   "providers": {
     "codex": {
       "name": "Codex (GPT)",
-      "description": "OpenAI GPT models via Codex CLI",
+      "description": "OpenAI GPT models via Codex CLI - strategic advisor for complex problems",
       "cli": "codex",
       "install": "npm install -g @openai/codex",
       "auth": "codex login",
@@ -11,38 +11,9 @@
         "command": "codex",
         "args": ["mcp-server"]
       },
-      "roles": ["oracle"],
-      "strengths": ["architecture", "debugging", "code-review", "security"]
-    },
-    "gemini": {
-      "name": "Gemini",
-      "description": "Google Gemini models via Gemini CLI",
-      "cli": "gemini",
-      "install": "npm install -g @google/gemini-cli",
-      "auth": "Set GOOGLE_API_KEY or run 'gcloud auth application-default login'",
-      "mcp": {
-        "type": "stdio",
-        "command": "npx",
-        "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/servers/gemini-mcp/src/index.ts"],
-        "alternatives": {
-          "bun": {
-            "command": "bun",
-            "args": ["run", "${CLAUDE_PLUGIN_ROOT}/servers/gemini-mcp/src/index.ts"]
-          }
-        }
-      },
-      "roles": ["librarian", "frontend-engineer", "explore"],
-      "strengths": ["research", "documentation", "frontend", "multimodal"]
+      "roles": ["oracle", "momus"],
+      "strengths": ["architecture", "debugging-escalation", "code-review", "security", "tradeoff-analysis"],
+      "avoid": ["simple-operations", "trivial-decisions", "research", "frontend-generation"]
     }
-  },
-  "defaults": {
-    "architecture": "codex",
-    "debugging": "codex",
-    "code-review": "codex",
-    "security": "codex",
-    "research": "gemini",
-    "documentation": "gemini",
-    "frontend": "gemini",
-    "multimodal": "gemini"
   }
 }

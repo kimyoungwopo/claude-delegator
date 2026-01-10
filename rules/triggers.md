@@ -1,6 +1,6 @@
 # Delegation Triggers
 
-This file defines when to automatically delegate to external models.
+This file defines when to delegate to Codex (GPT) as the oracle.
 
 ## Explicit Triggers (Highest Priority)
 
@@ -9,62 +9,56 @@ These phrases trigger immediate delegation. User intent is clear.
 | Phrase Pattern | Action |
 |----------------|--------|
 | "ask GPT", "consult GPT", "GPT's opinion" | `mcp__codex__codex` |
-| "ask Gemini", "research with Gemini" | `mcp__gemini__gemini` |
-| "get a second opinion" | `mcp__codex__codex` (default to GPT) |
+| "get a second opinion" | `mcp__codex__codex` |
 | "oracle" | `mcp__codex__codex` with oracle role |
 | "what does GPT think" | `mcp__codex__codex` |
-| "have Gemini look at this" | `mcp__gemini__gemini` |
+| "review this with GPT" | `mcp__codex__codex` |
 
 ## Semantic Triggers (Intent Matching)
 
-When user intent matches these patterns, delegate autonomously.
+When user intent matches these patterns, consider delegation.
 
-### Research & Documentation (→ Gemini)
+### Architecture & Design (→ Oracle)
 
-| Intent Pattern | Role | Example |
-|----------------|------|---------|
-| "how does [library] work" | librarian | "How does TanStack Query work?" |
-| "best practices for [X]" | librarian | "Best practices for React state" |
-| "what's the recommended way to" | librarian | "Recommended way to handle auth" |
-| "find examples of [pattern]" | librarian | "Find examples of error boundaries" |
-| "research [topic]" | librarian | "Research WebSocket best practices" |
-| "document [feature]" | librarian | "Document the API endpoints" |
+| Intent Pattern | Example |
+|----------------|---------|
+| "review this architecture" | "Review this database schema" |
+| "is this design sound" | "Is this API design sound?" |
+| "what are the tradeoffs" | "Tradeoffs of this caching approach" |
+| "should I use [pattern A] or [pattern B]" | "Should I use microservices or monolith?" |
+| "how should I structure" | "How should I structure this service?" |
 
-### Architecture & Review (→ GPT)
+### Security (→ Oracle)
 
-| Intent Pattern | Role | Example |
-|----------------|------|---------|
-| "review this architecture" | oracle | "Review this database schema" |
-| "is this design sound" | oracle | "Is this API design sound?" |
-| "what are the tradeoffs" | oracle | "Tradeoffs of this caching approach" |
-| "security implications of" | oracle | "Security implications of this auth flow" |
-| "performance concerns with" | oracle | "Performance concerns with this query" |
-| "code review [code]" | oracle | "Code review this function" |
+| Intent Pattern | Example |
+|----------------|---------|
+| "security implications of" | "Security implications of this auth flow" |
+| "is this secure" | "Is this token handling secure?" |
+| "vulnerability in" | "Any vulnerabilities in this code?" |
+| "threat model" | "Threat model for this API" |
 
-### Frontend & UI (→ Gemini)
+### Code Review (→ Oracle)
 
-| Intent Pattern | Role | Example |
-|----------------|------|---------|
-| "build me a [component]" | frontend-engineer | "Build me a dropdown menu" |
-| "create a [UI element]" | frontend-engineer | "Create a modal dialog" |
-| "style this [element]" | frontend-engineer | "Style this button component" |
-| "make this responsive" | frontend-engineer | "Make this layout responsive" |
-| "improve the UX of" | frontend-engineer | "Improve the UX of this form" |
+| Intent Pattern | Example |
+|----------------|---------|
+| "code review [code]" | "Code review this function" |
+| "review for edge cases" | "Review for edge cases in this logic" |
+| "what am I missing" | "What am I missing in this implementation?" |
 
-### Debugging (→ GPT after failures)
+### Debugging Escalation (→ Oracle)
 
 | Condition | Action |
 |-----------|--------|
-| 2+ failed fix attempts | Suggest GPT escalation |
-| "why is this failing" (after attempts) | GPT with full failure context |
-| "I've tried everything" | GPT with documented attempts |
+| 2+ failed fix attempts | Suggest oracle escalation |
+| "why is this failing" (after attempts) | Oracle with full failure context |
+| "I've tried everything" | Oracle with documented attempts |
 
 ## Trigger Priority
 
 1. **Explicit user request** - Always honor direct requests
-2. **Semantic intent match** - When pattern clearly matches
-3. **Failure escalation** - After documented failures
-4. **Don't delegate** - When you can answer directly
+2. **Failure escalation** - After documented failures
+3. **Semantic intent match** - When pattern clearly matches oracle scope
+4. **Don't delegate** - Default: answer directly
 
 ## When NOT to Delegate
 
@@ -73,35 +67,32 @@ When user intent matches these patterns, delegate autonomously.
 | Simple syntax questions | You know the answer |
 | Direct file operations | No external insight needed |
 | Trivial bug fixes | Obvious solution |
+| Research/documentation | Not oracle's strength |
+| Frontend/UI tasks | Not oracle's strength |
 | User just wants info | Answer directly |
-| Already have context | Don't repeat work |
 
 ## Context-Dependent Triggers
 
-Some triggers depend on prior context:
-
 ```
-IF user asked about [library] recently
-AND follow-up question is ambiguous
-THEN use same model as before (consistency)
+IF 2+ fix attempts failed
+AND error persists
+THEN suggest oracle escalation
 
-IF previous delegation failed
-AND user is frustrated
-THEN suggest switching models
+IF user is frustrated
+AND problem is complex
+THEN offer oracle consultation
 
-IF task involves both research AND architecture
-THEN consider parallel consultation
+IF architectural decision
+AND long-term impact
+THEN recommend oracle review
 ```
 
-## Role Selection Guide
+## Role: Oracle
 
-When delegating, choose the appropriate role:
+The oracle role auto-injects a system prompt emphasizing:
+- Pragmatic minimalism
+- Existing codebase patterns
+- Developer experience
+- Clear action plans with effort estimates
 
-| Role | When to Use | Model |
-|------|-------------|-------|
-| `oracle` | Architecture, security, complex reasoning | GPT |
-| `librarian` | Research, documentation, best practices | Gemini |
-| `frontend-engineer` | UI/UX code, components, styling | Gemini |
-| `explore` | Codebase search, pattern finding | Gemini |
-
-Roles auto-inject system prompts that guide the external model's behavior.
+See `prompts/oracle.md` for full prompt.
