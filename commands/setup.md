@@ -78,7 +78,7 @@ cat ~/.claude/settings.json | jq -r '.mcpServers.codex.args | join(" ")' 2>/dev/
 ls ~/.claude/rules/delegator/*.md 2>/dev/null | wc -l
 
 # Check 4: Auth status (check if logged in)
-codex auth status 2>&1 | head -1 || echo "Run 'codex login' to authenticate"
+codex login status 2>&1 | head -1 || echo "Run 'codex login' to authenticate"
 ```
 
 ## Step 6: Report Status
