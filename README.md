@@ -9,19 +9,14 @@ GPT expert subagents for Claude Code. Five specialists that can analyze AND impl
 
 ## Install
 
-Inside a Claude Code instance, run the following commands:
+Inside a Claude Code instance:
 
-**Step 1: Add the marketplace**
+**Step 1: Add the plugin**
 ```
-/plugin marketplace add jarrodwatts/claude-delegator
-```
-
-**Step 2: Install the plugin**
-```
-/plugin install claude-delegator
+/plugin add jarrodwatts/claude-delegator
 ```
 
-**Step 3: Run setup**
+**Step 2: Run setup**
 ```
 /claude-delegator:setup
 ```
