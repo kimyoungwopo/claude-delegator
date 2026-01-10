@@ -45,35 +45,7 @@ My assessment: [your evaluation, any disagreements, how this applies to the task
 
 ## Delegation Prompt Structure (MANDATORY)
 
-When delegating, your prompt MUST include these 7 sections:
-
-```
-1. TASK: [Atomic, specific goal - one sentence]
-
-2. EXPECTED OUTCOME: [What success looks like]
-
-3. CONTEXT:
-   - Current approach: [what you've tried]
-   - Relevant code: [file paths or inline snippets]
-   - Conversation history: [relevant prior discussion]
-
-4. CONSTRAINTS:
-   - [Technical limitations]
-   - [Patterns to follow]
-   - [Dependencies/versions]
-
-5. MUST DO:
-   - [Exhaustive list of requirements]
-   - [Be specific - leave nothing implicit]
-
-6. MUST NOT DO:
-   - [Forbidden actions]
-   - [Anticipate and block rogue behavior]
-
-7. OUTPUT FORMAT:
-   - [How to structure the response]
-   - [What sections to include]
-```
+Use the 7-section format from `rules/delegation-format.md`. Every delegation MUST include: TASK, EXPECTED OUTCOME, CONTEXT, CONSTRAINTS, MUST DO, MUST NOT DO, OUTPUT FORMAT.
 
 ## Multi-Role Consultation
 

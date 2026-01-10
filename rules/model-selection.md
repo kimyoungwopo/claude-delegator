@@ -1,38 +1,56 @@
 # Model Selection Guidelines
 
-Choose the right model for each task type.
+Codex (GPT) serves as a strategic advisor for complex problems. Use it sparingly and intentionally.
 
-## GPT (Codex) — Strategic Advisor
+## GPT (Codex) — Oracle Role
 
 **Tool:** `mcp__codex__codex`
 
-### Use GPT For
+### When to Consult the Oracle
 
-- **Architecture decisions** - System design, database schemas, API design
-- **Complex debugging** - After 2+ failed attempts, fresh perspective
-- **Security analysis** - Threat modeling, vulnerability assessment
-- **Performance analysis** - Bottleneck identification, optimization strategies
-- **Code review** - Multi-system thinking, edge case identification
-- **Design patterns** - Choosing patterns, understanding tradeoffs
-- **Refactoring decisions** - When and how to refactor
-- **Technical debt assessment** - Priority and approach
+| Situation | Trigger |
+|-----------|---------|
+| Architecture decisions | System design, database schemas, API design |
+| Complex debugging | After 2+ failed fix attempts |
+| Code review | Multi-system thinking, edge case identification |
+| Security analysis | Threat modeling, vulnerability assessment |
+| Tradeoff analysis | When multiple valid approaches exist |
+| Unfamiliar patterns | Domain-specific best practices |
 
-### GPT Characteristics
+### Oracle Philosophy
 
-| Trait | Description |
-|-------|-------------|
-| Deep reasoning | Step-by-step logical analysis |
-| Edge case awareness | Good at "what if" scenarios |
-| Tradeoff analysis | Balances multiple concerns |
-| Cost | More expensive per call |
-| Speed | Slower but thorough |
+The oracle operates with **pragmatic minimalism**:
 
-### GPT Parameters
+> Favor the least complex solution that fulfills actual requirements over theoretically optimal approaches.
+
+Priorities:
+1. Existing code patterns in the codebase
+2. Developer experience
+3. Maintainability over cleverness
+
+### Oracle Response Format
+
+Recommendations follow this structure:
+
+**Essential** (always provided):
+- Bottom line / recommendation
+- Action plan
+- Effort estimate: Quick / Short / Medium / Large
+
+**Expanded** (when relevant):
+- Reasoning
+- Risk assessment
+
+**Edge cases** (only if applicable):
+- Escalation conditions
+- Alternatives
+
+### Codex Parameters
 
 ```typescript
 mcp__codex__codex({
   prompt: "...",
-  model: "gpt-5.2",              // or "o3" for complex reasoning
+  // model selection handled by Codex CLI configuration
   "approval-policy": "on-request", // ask before tool use
   "developer-instructions": "..."  // role prompt injection
 })
@@ -40,64 +58,15 @@ mcp__codex__codex({
 
 ---
 
-## Gemini — Research & Implementation
+## When NOT to Consult
 
-**Tool:** `mcp__gemini__gemini`
-
-### Use Gemini For
-
-- **Library research** - How to use APIs, best practices
-- **Documentation** - Writing and improving docs
-- **Frontend/UI code** - Components, styling, responsive design
-- **Multimodal analysis** - Images, PDFs, diagrams
-- **Codebase exploration** - Finding patterns, understanding structure
-- **Best practices lookup** - Framework-specific guidance
-- **Quick answers** - When you need fast research
-
-### Gemini Characteristics
-
-| Trait | Description |
-|-------|-------------|
-| Large context | Can process extensive docs |
-| Synthesis | Good at combining multiple sources |
-| Speed | Faster responses |
-| Cost | Cheaper per call |
-| Creativity | Good for UI/UX suggestions |
-
-### Gemini Parameters
-
-```typescript
-mcp__gemini__gemini({
-  prompt: "...",
-  model: "gemini-2.5-pro",     // or "gemini-2.5-flash" for speed
-  role: "librarian",           // auto-inject role prompt
-  "approval-mode": "yolo",     // auto-approve tool use
-  timeout: 300000              // 5 min for research tasks
-})
-```
-
----
-
-## Decision Matrix
-
-| Task Type | Primary | Fallback | Notes |
-|-----------|---------|----------|-------|
-| Architecture review | GPT | - | Always GPT for architecture |
-| Library research | Gemini | - | Gemini's strength |
-| Code review | GPT | - | GPT for logical analysis |
-| Documentation | Gemini | - | Gemini writes well |
-| Complex debugging | GPT | - | After you've tried |
-| UI/UX code | Gemini | - | Gemini for creativity |
-| Performance analysis | GPT | - | GPT for deep analysis |
-| API integration | Gemini | GPT | Start with Gemini research |
-| Security audit | GPT | - | Always GPT for security |
-| Quick lookup | Gemini | - | Fast and cheap |
+See `rules/triggers.md` for the complete list of when NOT to delegate.
 
 ---
 
 ## Cost-Benefit Analysis
 
-### When GPT is Worth the Cost
+### Worth the Cost
 
 - Architectural decisions with long-term impact
 - Security concerns that could cause vulnerabilities
@@ -105,63 +74,22 @@ mcp__gemini__gemini({
 - Complex multi-system interactions
 - Decisions affecting system scalability
 
-### When to Use Cheaper Gemini
+### Not Worth the Cost
 
-- Research that doesn't require deep reasoning
-- Frontend work (Gemini is creative)
-- Documentation tasks
-- Quick best-practice lookups
-- Exploratory questions
-
----
-
-## Parallel Consultation
-
-For critical decisions, consult both:
-
-```typescript
-// Launch in parallel for important decisions
-const gptPromise = mcp__codex__codex({
-  prompt: "Analyze tradeoffs of [approach]..."
-});
-const geminiPromise = mcp__gemini__gemini({
-  prompt: "Research implementation patterns for [approach]...",
-  role: "librarian"
-});
-
-// Synthesize both perspectives
-```
-
-### When to Use Parallel
-
-| Situation | Reason |
-|-----------|--------|
-| Major architecture decision | Get both reasoning AND research |
-| Unfamiliar domain | GPT for tradeoffs, Gemini for patterns |
-| High-stakes refactor | Verify approach from multiple angles |
-| User explicitly asks | "Get both opinions" |
+- Questions you could answer with a quick search
+- Trivial code changes
+- Style or formatting decisions
+- Simple CRUD operations
 
 ---
 
-## Model Parameters Reference
-
-### Codex (GPT) Parameters
+## Codex Parameters Reference
 
 | Parameter | Values | Default | Notes |
 |-----------|--------|---------|-------|
-| `model` | `gpt-5.2`, `o3`, etc. | - | Choose based on task complexity |
 | `approval-policy` | `untrusted`, `on-failure`, `on-request`, `never` | `on-request` | Controls tool approval |
 | `sandbox` | `read-only`, `workspace-write`, `danger-full-access` | `read-only` | File access level |
 | `cwd` | path | current | Working directory |
 | `developer-instructions` | string | - | System prompt injection |
 
-### Gemini Parameters
-
-| Parameter | Values | Default | Notes |
-|-----------|--------|---------|-------|
-| `model` | `gemini-2.5-pro`, `gemini-2.5-flash` | `gemini-2.5-pro` | Pro for quality, Flash for speed |
-| `role` | `oracle`, `librarian`, `frontend-engineer`, `explore` | - | Auto-inject role prompt |
-| `approval-mode` | `default`, `auto_edit`, `yolo` | `yolo` | Tool approval mode |
-| `sandbox` | boolean | false | Sandbox mode |
-| `cwd` | path | current | Working directory |
-| `timeout` | number (ms) | 600000 | 10 min default |
+Model selection is handled by your Codex CLI configuration, not passed per-call.
