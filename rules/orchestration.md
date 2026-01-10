@@ -1,204 +1,226 @@
 # Model Orchestration
 
-You have access to GPT via MCP tools. Use it strategically based on these guidelines.
+You have access to GPT experts via MCP tools. Use them strategically based on these guidelines.
 
 ## Available Tools
 
 | Tool | Provider | Use For |
 |------|----------|---------|
-| `mcp__codex__codex` | GPT | Start new delegation (Worker, Oracle, or Momus) |
-| `mcp__codex__codex-reply` | GPT | Continue conversation (retry failures, follow-up) |
+| `mcp__codex__codex` | GPT | Delegate to an expert (stateless) |
+
+> **Note:** `codex-reply` exists but requires a session ID not currently exposed to Claude Code. Each delegation is independent—include full context in every call.
+
+## Available Experts
+
+| Expert | Specialty | Prompt File |
+|--------|-----------|-------------|
+| **Architect** | System design, tradeoffs, complex debugging | `${CLAUDE_PLUGIN_ROOT}/prompts/architect.md` |
+| **Plan Reviewer** | Plan validation before execution | `${CLAUDE_PLUGIN_ROOT}/prompts/plan-reviewer.md` |
+| **Scope Analyst** | Pre-planning, catching ambiguities | `${CLAUDE_PLUGIN_ROOT}/prompts/scope-analyst.md` |
+| **Code Reviewer** | Code quality, bugs, security issues | `${CLAUDE_PLUGIN_ROOT}/prompts/code-reviewer.md` |
+| **Security Analyst** | Vulnerabilities, threat modeling | `${CLAUDE_PLUGIN_ROOT}/prompts/security-analyst.md` |
 
 ---
 
-## Three-Role Model
+## Stateless Design
 
-| Role | Purpose | Sandbox | Approval | Response Handling |
-|------|---------|---------|----------|-------------------|
-| **Worker** | Execute implementation tasks | `workspace-write` | `on-failure` | Verify then report |
-| **Oracle** | Strategic advice, architecture | `read-only` | `on-request` | Synthesize |
-| **Momus** | Plan validation, critique | `read-only` | `on-request` | Synthesize |
+**Each delegation is independent.** The expert has no memory of previous calls.
 
----
+**Implications:**
+- Include ALL relevant context in every delegation prompt
+- For retries, include what was attempted and what failed
+- Don't assume the expert remembers previous interactions
 
-## Phase 0: Role Detection (EVERY message)
-
-Before processing a request, determine the appropriate role:
-
-```
-1. Check explicit triggers ("ask GPT" → Oracle, "have GPT implement" → Worker)
-2. Check for plan review ("review this plan" → Momus)
-3. Check for questions/analysis (question words → Oracle)
-4. Check for action verbs (add, fix, implement → Worker)
-5. Ambiguous → Default to Worker
-```
-
-See `rules/triggers.md` for complete trigger definitions.
+**Why:** Codex MCP returns session IDs in event notifications, but Claude Code only surfaces the final text response. Until this changes, treat each call as fresh.
 
 ---
 
-## Worker Flow (Execution)
+## PROACTIVE Delegation (Check on EVERY message)
 
-When delegating to Worker:
+Before handling any request, check if an expert would help:
 
-### Step 1: Notify User
+| Signal | Expert |
+|--------|--------|
+| Architecture/design decision | Architect |
+| 2+ failed fix attempts on same issue | Architect (fresh perspective) |
+| "Review this plan", "validate approach" | Plan Reviewer |
+| Vague/ambiguous requirements | Scope Analyst |
+| "Review this code", "find issues" | Code Reviewer |
+| Security concerns, "is this secure" | Security Analyst |
 
-**Always** inform user before delegating:
+**If a signal matches → delegate to the appropriate expert.**
+
+---
+
+## REACTIVE Delegation (Explicit User Request)
+
+When user explicitly requests GPT/Codex:
+
+| User Says | Action |
+|-----------|--------|
+| "ask GPT", "consult GPT", "ask codex" | Identify task type → route to appropriate expert |
+| "ask GPT to review the architecture" | Delegate to Architect |
+| "have GPT review this code" | Delegate to Code Reviewer |
+| "GPT security review" | Delegate to Security Analyst |
+
+**Always honor explicit requests.**
+
+---
+
+## Delegation Flow (Step-by-Step)
+
+When delegation is triggered:
+
+### Step 1: Identify Expert
+Match the task to the appropriate expert based on triggers.
+
+### Step 2: Read Expert Prompt
+**CRITICAL**: Read the expert's prompt file to get their system instructions:
+
 ```
-Delegating to Worker: [brief task summary]
+Read ${CLAUDE_PLUGIN_ROOT}/prompts/[expert].md
 ```
 
-### Step 2: Execute Delegation
+For example, for Architect: `Read ${CLAUDE_PLUGIN_ROOT}/prompts/architect.md`
 
+### Step 3: Determine Mode
+| Task Type | Mode | Sandbox |
+|-----------|------|---------|
+| Analysis, review, recommendations | Advisory | `read-only` |
+| Make changes, fix issues, implement | Implementation | `workspace-write` |
+
+### Step 4: Notify User
+Always inform the user before delegating:
+```
+Delegating to [Expert Name]: [brief task summary]
+```
+
+### Step 5: Build Delegation Prompt
+Use the 7-section format from `rules/delegation-format.md`.
+
+**IMPORTANT:** Since each call is stateless, include FULL context:
+- What the user asked for
+- Relevant code/files
+- Any previous attempts and their results (for retries)
+
+### Step 6: Call the Expert
 ```typescript
 mcp__codex__codex({
-  prompt: "[Worker delegation format - see delegation-format.md]",
+  prompt: "[your 7-section delegation prompt with FULL context]",
+  "developer-instructions": "[contents of the expert's prompt file]",
+  sandbox: "[read-only or workspace-write based on mode]",
+  cwd: "[current working directory]"
+})
+```
+
+### Step 7: Handle Response
+1. **Synthesize** - Never show raw output directly
+2. **Extract insights** - Key recommendations, issues, changes
+3. **Apply judgment** - Experts can be wrong; evaluate critically
+4. **Verify implementation** - For implementation mode, confirm changes work
+
+---
+
+## Retry Flow (Implementation Mode)
+
+When implementation fails verification, retry with a NEW call including error context:
+
+```
+Attempt 1 → Verify → [Fail]
+     ↓
+Attempt 2 (new call with: original task + what was tried + error details) → Verify → [Fail]
+     ↓
+Attempt 3 (new call with: full history of attempts) → Verify → [Fail]
+     ↓
+Escalate to user
+```
+
+### Retry Prompt Template
+
+```markdown
+TASK: [Original task]
+
+PREVIOUS ATTEMPT:
+- What was done: [summary of changes made]
+- Error encountered: [exact error message]
+- Files modified: [list]
+
+CONTEXT:
+- [Full original context]
+
+REQUIREMENTS:
+- Fix the error from the previous attempt
+- [Original requirements]
+```
+
+**Key:** Each retry is a fresh call. The expert doesn't know what happened before unless you tell them.
+
+---
+
+## Example: Architecture Question
+
+User: "What are the tradeoffs of Redis vs in-memory caching?"
+
+**Step 1**: Signal matches "Architecture decision" → Architect
+
+**Step 2**: Read `${CLAUDE_PLUGIN_ROOT}/prompts/architect.md`
+
+**Step 3**: Advisory mode (question, not implementation) → `read-only`
+
+**Step 4**: "Delegating to Architect: Analyze caching tradeoffs"
+
+**Step 5-6**:
+```typescript
+mcp__codex__codex({
+  prompt: `TASK: Analyze tradeoffs between Redis and in-memory caching for [context].
+EXPECTED OUTCOME: Clear recommendation with rationale.
+CONTEXT: [user's situation, full details]
+...`,
+  "developer-instructions": "[contents of architect.md]",
+  sandbox: "read-only"
+})
+```
+
+**Step 7**: Synthesize response, add your assessment.
+
+---
+
+## Example: Retry After Failed Implementation
+
+First attempt failed with "TypeError: Cannot read property 'x' of undefined"
+
+**Retry call:**
+```typescript
+mcp__codex__codex({
+  prompt: `TASK: Add input validation to the user registration endpoint.
+
+PREVIOUS ATTEMPT:
+- Added validation middleware to routes/auth.ts
+- Error: TypeError: Cannot read property 'x' of undefined at line 45
+- The middleware was added but req.body was undefined
+
+CONTEXT:
+- Express 4.x application
+- Body parser middleware exists in app.ts
+- [relevant code snippets]
+
+REQUIREMENTS:
+- Fix the undefined req.body issue
+- Ensure validation runs after body parser
+- Report all files modified`,
+  "developer-instructions": "[contents of code-reviewer.md or architect.md]",
   sandbox: "workspace-write",
-  "approval-policy": "on-failure",
-  cwd: "[current working directory]",
-  "developer-instructions": "[contents of prompts/worker.md]"
+  cwd: "/path/to/project"
 })
-```
-
-### Step 3: Verify Results
-
-After Worker completes:
-
-1. **Read reported files** - Confirm changes match Worker's report
-2. **Run verification** - If project has tests/build/lint, run them
-3. **Check for issues** - Look for obvious problems in changed code
-
-### Step 4: Report to User
-
-**On success** (expandable format):
-```
-**Worker completed**: [1-2 sentence summary]
-
-<details>
-<summary>Details</summary>
-
-**Files modified**:
-- [file list from Worker]
-
-**Verification**:
-- [what was checked, results]
-</details>
-```
-
-**On failure** → Proceed to retry flow
-
-### Step 5: Retry Flow (On Verification Failure)
-
-```
-Attempt 1: Worker completes → Verification fails
-    ↓
-Attempt 2: codex-reply with error context → Verification fails
-    ↓
-Attempt 3: codex-reply with error context → Verification fails
-    ↓
-Escalate: Report to user with full context
-```
-
-Use `mcp__codex__codex-reply` with the conversation ID:
-
-```typescript
-mcp__codex__codex-reply({
-  conversationId: "[from previous response]",
-  prompt: "Verification failed: [specific error]. Please fix and verify again."
-})
-```
-
-After 3 failed attempts, escalate to user:
-```
-Worker attempted this task 3 times but verification continues to fail.
-
-**Last error**: [error details]
-**Files modified**: [list]
-**Attempts made**: [summary of each attempt]
-
-How would you like to proceed?
-```
-
----
-
-## Oracle Flow (Advisory)
-
-When delegating to Oracle:
-
-### Step 1: Notify User
-```
-Consulting Oracle: [topic]
-```
-
-### Step 2: Execute Delegation
-
-```typescript
-mcp__codex__codex({
-  prompt: "[Oracle delegation format - see delegation-format.md]",
-  "developer-instructions": "[contents of prompts/oracle.md]"
-})
-```
-
-### Step 3: Synthesize Response
-
-**ALWAYS synthesize** - Never show raw output directly:
-
-1. Extract key recommendations and insights
-2. Apply your judgment - external models can be wrong
-3. Disagree when warranted - explain why
-4. Connect to user's specific situation
-
-```
-**Oracle's analysis**:
-[summary of key points]
-
-**Key recommendations**:
-- [recommendation 1]
-- [recommendation 2]
-
-**My assessment**: [your evaluation, any disagreements, how this applies]
-```
-
----
-
-## Momus Flow (Plan Validation)
-
-When delegating to Momus:
-
-### Step 1: Notify User
-```
-Validating plan with Momus...
-```
-
-### Step 2: Execute Delegation
-
-```typescript
-mcp__codex__codex({
-  prompt: "[Momus delegation format - see delegation-format.md]",
-  "developer-instructions": "[contents of prompts/momus.md]"
-})
-```
-
-### Step 3: Report Verdict
-
-```
-**Plan review**: [OKAY / REJECT]
-
-[Momus's justification]
-
-[If REJECT: Top issues to address]
 ```
 
 ---
 
 ## Cost Awareness
 
-External model calls cost money. Use strategically:
-
-- **Don't spam** - One well-structured delegation beats five vague ones
-- **Worker for action** - Don't ask Oracle when you need implementation
-- **Use codex-reply** - Continue conversations instead of starting fresh
-- **Avoid redundant calls** - If you have the answer, don't delegate
+- **Don't spam** - One well-structured delegation beats multiple vague ones
+- **Include full context** - Saves retry costs from missing information
+- **Reserve for high-value tasks** - Architecture, security, complex analysis
 
 ---
 
@@ -206,9 +228,9 @@ External model calls cost money. Use strategically:
 
 | Don't Do This | Do This Instead |
 |---------------|-----------------|
-| Delegate without notifying user | Always show "Delegating to [Role]: [task]" |
-| Skip verification after Worker | Always verify changed files |
-| Show raw Worker output | Summarize with expandable details |
-| Retry indefinitely | Max 3 attempts, then escalate |
-| Mix roles in one delegation | One role per delegation |
-| Delegate trivial tasks | Handle directly |
+| Delegate trivial questions | Answer directly |
+| Show raw expert output | Synthesize and interpret |
+| Delegate without reading prompt file | ALWAYS read and inject expert prompt |
+| Skip user notification | ALWAYS notify before delegating |
+| Retry without including error context | Include FULL history of what was tried |
+| Assume expert remembers previous calls | Include all context in every call |

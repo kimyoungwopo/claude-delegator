@@ -1,167 +1,147 @@
 # Delegation Triggers
 
-This file defines when and how to delegate to Codex (GPT) across three roles: Worker, Oracle, and Momus.
+This file defines when to delegate to GPT experts via Codex.
 
-## Role Auto-Detection
+## IMPORTANT: Check These Triggers on EVERY Message
 
-Automatically route to the appropriate role based on task type:
+You MUST scan incoming messages for delegation triggers. This is NOT optional.
 
-| Signal | Role | Examples |
-|--------|------|----------|
-| Action verb + target | **Worker** | "add tests", "fix the bug", "update README", "implement feature", "create config" |
-| Question word or analysis | **Oracle** | "what are the tradeoffs", "how should I", "is this secure", "review this architecture" |
-| "plan" + review/validate | **Momus** | "review this plan", "validate the approach", "check this plan" |
+**Behavior:**
+1. **PROACTIVE**: On every user message, check if semantic triggers match → delegate automatically
+2. **REACTIVE**: If user explicitly mentions GPT/Codex → delegate immediately
 
-**Default on ambiguity**: Worker (bias toward action)
-
-Examples:
-- "Improve the README" → Worker (action implied)
-- "How should I improve the README?" → Oracle (question)
-- "Review my plan to improve the README" → Momus (plan review)
+When a trigger matches:
+1. Identify the appropriate expert
+2. Read their prompt file from `${CLAUDE_PLUGIN_ROOT}/prompts/[expert].md`
+3. Follow the delegation flow in `rules/orchestration.md`
 
 ---
+
+## Available Experts
+
+| Expert | Specialty | Use For |
+|--------|-----------|---------|
+| **Architect** | System design, tradeoffs | Architecture decisions, complex debugging |
+| **Plan Reviewer** | Plan validation | Reviewing work plans before execution |
+| **Scope Analyst** | Pre-planning analysis | Catching ambiguities before work starts |
+| **Code Reviewer** | Code quality, bugs | Reviewing code changes, finding issues |
+| **Security Analyst** | Vulnerabilities, threats | Security audits, hardening |
 
 ## Explicit Triggers (Highest Priority)
 
-User intent is explicit. Always honor direct requests.
+User explicitly requests delegation:
 
-| Phrase Pattern | Role | Action |
-|----------------|------|--------|
-| "ask GPT", "consult GPT", "GPT's opinion" | Oracle | Advisory mode |
-| "have GPT implement", "GPT should fix" | Worker | Execution mode |
-| "review this plan with GPT" | Momus | Plan validation |
-| "oracle" | Oracle | Explicit oracle role |
-| "get a second opinion" | Oracle | Advisory mode |
+| Phrase Pattern | Expert |
+|----------------|--------|
+| "ask GPT", "consult GPT" | Route based on context |
+| "review this architecture" | Architect |
+| "review this plan" | Plan Reviewer |
+| "analyze the scope" | Scope Analyst |
+| "review this code" | Code Reviewer |
+| "security review", "is this secure" | Security Analyst |
 
----
+## Semantic Triggers (Intent Matching)
 
-## Worker Triggers (→ Execution)
-
-Worker is invoked for implementation tasks with clear action verbs.
-
-### Action Patterns
-
-| Pattern | Examples |
-|---------|----------|
-| "add [thing]" | "Add a section to README", "Add tests for X" |
-| "fix [thing]" | "Fix the bug in auth", "Fix the failing test" |
-| "update [thing]" | "Update the config", "Update dependencies" |
-| "implement [thing]" | "Implement feature X", "Implement the API endpoint" |
-| "create [thing]" | "Create a new component", "Create the migration" |
-| "delete/remove [thing]" | "Delete the unused code", "Remove deprecated API" |
-| "refactor [thing]" | "Refactor the auth module" |
-
-### Worker Sandbox
-
-Worker executes with:
-- `sandbox: workspace-write` - Can modify files in workspace
-- `approval-policy: on-failure` - Only prompts on errors
-- `cwd: [current directory]` - Operates in current working directory
-
----
-
-## Oracle Triggers (→ Advisory)
-
-Oracle is invoked for strategic advice, analysis, and complex decisions.
-
-### Architecture & Design
+### Architecture & Design (→ Architect)
 
 | Intent Pattern | Example |
 |----------------|---------|
-| "review this architecture" | "Review this database schema" |
-| "is this design sound" | "Is this API design sound?" |
+| "how should I structure" | "How should I structure this service?" |
 | "what are the tradeoffs" | "Tradeoffs of this caching approach" |
 | "should I use [A] or [B]" | "Should I use microservices or monolith?" |
-| "how should I structure" | "How should I structure this service?" |
+| System design questions | "Design a notification system" |
+| After 2+ failed fix attempts | Escalation for fresh perspective |
 
-### Security
+### Plan Validation (→ Plan Reviewer)
 
 | Intent Pattern | Example |
 |----------------|---------|
-| "security implications of" | "Security implications of this auth flow" |
+| "review this plan" | "Review my migration plan" |
+| "is this plan complete" | "Is this implementation plan complete?" |
+| "validate before I start" | "Validate my approach before starting" |
+| Before significant work | Pre-execution validation |
+
+### Requirements Analysis (→ Scope Analyst)
+
+| Intent Pattern | Example |
+|----------------|---------|
+| "what am I missing" | "What am I missing in these requirements?" |
+| "clarify the scope" | "Help clarify the scope of this feature" |
+| Vague or ambiguous requests | Before planning unclear work |
+| "before we start" | Pre-planning consultation |
+
+### Code Review (→ Code Reviewer)
+
+| Intent Pattern | Example |
+|----------------|---------|
+| "review this code" | "Review this PR" |
+| "find issues in" | "Find issues in this implementation" |
+| "what's wrong with" | "What's wrong with this function?" |
+| After implementing features | Self-review before merge |
+
+### Security (→ Security Analyst)
+
+| Intent Pattern | Example |
+|----------------|---------|
+| "security implications" | "Security implications of this auth flow" |
 | "is this secure" | "Is this token handling secure?" |
-| "vulnerability in" | "Any vulnerabilities in this code?" |
+| "vulnerabilities in" | "Any vulnerabilities in this code?" |
 | "threat model" | "Threat model for this API" |
-
-### Code Review (Advisory)
-
-| Intent Pattern | Example |
-|----------------|---------|
-| "code review [code]" | "Code review this function" |
-| "review for edge cases" | "Review for edge cases in this logic" |
-| "what am I missing" | "What am I missing in this implementation?" |
-
-### Debugging Escalation
-
-| Condition | Action |
-|-----------|--------|
-| 2+ failed fix attempts | Suggest oracle escalation |
-| "why is this failing" (after attempts) | Oracle with full failure context |
-| "I've tried everything" | Oracle with documented attempts |
-
----
-
-## Momus Triggers (→ Plan Validation)
-
-Momus is invoked to validate work plans before execution.
-
-| Intent Pattern | Example |
-|----------------|---------|
-| "review this plan" | "Review this migration plan" |
-| "validate the approach" | "Validate my approach before I start" |
-| "check this plan for gaps" | "Check this implementation plan" |
-| "is this plan complete" | "Is this refactoring plan complete?" |
-
----
+| "harden this" | "Harden this endpoint" |
 
 ## Trigger Priority
 
-1. **Explicit user request** - Always honor direct role requests ("ask GPT", "have GPT implement")
-2. **Plan validation** - "plan" + review/validate → Momus
-3. **Question/analysis** - Question words, "review", "analyze" → Oracle
-4. **Action verbs** - add, fix, implement, update, create → Worker
-5. **Ambiguous** - Default to Worker (bias toward action)
-
----
+1. **Explicit user request** - Always honor direct requests
+2. **Security concerns** - When handling sensitive data/auth
+3. **Architecture decisions** - System design with long-term impact
+4. **Failure escalation** - After 2+ failed attempts
+5. **Don't delegate** - Default: handle directly
 
 ## When NOT to Delegate
 
 | Situation | Reason |
 |-----------|--------|
-| Simple syntax questions | Claude knows the answer |
-| Direct file operations (no reasoning needed) | No external insight needed |
-| Trivial bug fixes (obvious solution) | Don't waste delegation |
-| User just wants info/explanation | Answer directly |
-| First attempt at any fix | Try yourself first (except Worker tasks) |
+| Simple syntax questions | Answer directly |
+| Direct file operations | No external insight needed |
+| Trivial bug fixes | Obvious solution |
+| Research/documentation | Use other tools |
+| First attempt at any fix | Try yourself first |
 
----
+## Advisory vs Implementation Mode
 
-## Context-Dependent Triggers
+Any expert can operate in two modes:
 
+| Mode | Sandbox | When to Use |
+|------|---------|-------------|
+| **Advisory** | `read-only` | Analysis, recommendations, review verdicts |
+| **Implementation** | `workspace-write` | Actually making changes, fixing issues |
+
+Set the sandbox based on what the task requires, not the expert type.
+
+**Examples:**
+
+```typescript
+// Architect analyzing (advisory)
+mcp__codex__codex({
+  prompt: "Analyze tradeoffs of Redis vs in-memory caching",
+  sandbox: "read-only"
+})
+
+// Architect implementing (implementation)
+mcp__codex__codex({
+  prompt: "Refactor the caching layer to use Redis",
+  sandbox: "workspace-write"
+})
+
+// Security Analyst reviewing (advisory)
+mcp__codex__codex({
+  prompt: "Review this auth flow for vulnerabilities",
+  sandbox: "read-only"
+})
+
+// Security Analyst hardening (implementation)
+mcp__codex__codex({
+  prompt: "Fix the SQL injection vulnerability in user.ts",
+  sandbox: "workspace-write"
+})
 ```
-IF 2+ fix attempts failed
-AND error persists
-THEN suggest oracle escalation
-
-IF user is frustrated
-AND problem is complex
-THEN offer oracle consultation
-
-IF architectural decision
-AND long-term impact
-THEN recommend oracle review
-
-IF task involves code changes
-AND action verb present
-THEN route to Worker
-```
-
----
-
-## Role Reference
-
-| Role | Prompt File | Purpose |
-|------|-------------|---------|
-| Worker | `prompts/worker.md` | Execute implementation tasks |
-| Oracle | `prompts/oracle.md` | Strategic advice, architecture, security |
-| Momus | `prompts/momus.md` | Plan validation and critique |

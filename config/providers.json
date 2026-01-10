@@ -2,7 +2,7 @@
   "providers": {
     "codex": {
       "name": "Codex (GPT)",
-      "description": "OpenAI GPT models via Codex CLI - strategic advisor for complex problems",
+      "description": "OpenAI GPT models via Codex CLI - specialized expert subagents",
       "cli": "codex",
       "install": "npm install -g @openai/codex",
       "auth": "codex login",
@@ -11,9 +11,9 @@
         "command": "codex",
         "args": ["-m", "gpt-5.2-codex", "mcp-server"]
       },
-      "roles": ["worker", "oracle", "momus"],
-      "strengths": ["architecture", "debugging-escalation", "code-review", "security", "tradeoff-analysis"],
-      "avoid": ["simple-operations", "trivial-decisions", "research", "frontend-generation"]
+      "experts": ["architect", "plan-reviewer", "scope-analyst", "code-reviewer", "security-analyst"],
+      "strengths": ["architecture", "code-review", "security", "requirements-analysis", "plan-validation"],
+      "avoid": ["simple-operations", "trivial-decisions", "research", "first-attempt-fixes"]
     }
   }
 }

@@ -1,192 +1,120 @@
 # Model Selection Guidelines
 
-Codex (GPT) serves three roles: Worker (execution), Oracle (advisory), and Momus (plan validation). Each role has different sandbox settings and use cases.
+GPT experts serve as specialized consultants for complex problems. Each expert has a distinct specialty but can operate in advisory or implementation mode.
 
-## Role Overview
+## Expert Directory
 
-| Role | Purpose | Sandbox | Approval | When to Use |
-|------|---------|---------|----------|-------------|
-| **Worker** | Execute implementation tasks | `workspace-write` | `on-failure` | Action verbs: add, fix, implement, update |
-| **Oracle** | Strategic advice, analysis | `read-only` | `on-request` | Questions, tradeoffs, architecture |
-| **Momus** | Plan validation, critique | `read-only` | `on-request` | "Review this plan" |
+| Expert | Specialty | Best For |
+|--------|-----------|----------|
+| **Architect** | System design | Architecture, tradeoffs, complex debugging |
+| **Plan Reviewer** | Plan validation | Reviewing plans before execution |
+| **Scope Analyst** | Requirements analysis | Catching ambiguities, pre-planning |
+| **Code Reviewer** | Code quality | Code review, finding bugs |
+| **Security Analyst** | Security | Vulnerabilities, threat modeling, hardening |
 
----
+## Operating Modes
 
-## GPT (Codex) — Worker Role
+Every expert can operate in two modes:
 
-**Tool:** `mcp__codex__codex`
+| Mode | Sandbox | Approval | Use When |
+|------|---------|----------|----------|
+| **Advisory** | `read-only` | `on-request` | Analysis, recommendations, reviews |
+| **Implementation** | `workspace-write` | `on-failure` | Making changes, fixing issues |
 
-### When to Use Worker
+**Key principle**: The mode is determined by the task, not the expert. An Architect can implement architectural changes. A Security Analyst can fix vulnerabilities.
 
-| Situation | Examples |
-|-----------|----------|
-| Implementation tasks | "Add tests for X", "Fix the bug in Y" |
-| File modifications | "Update the README", "Create a config file" |
-| Code changes | "Implement feature Z", "Refactor module W" |
-| Build/test tasks | "Run and fix failing tests" |
+## Expert Details
 
-### Worker Philosophy
+### Architect
 
-Worker operates with **direct execution**:
+**Specialty**: System design, technical strategy, complex decision-making
 
-> Execute the task, don't advise on it. Make changes, verify they work, report results.
+**When to use**:
+- System design decisions
+- Database schema design
+- API architecture
+- Multi-service interactions
+- After 2+ failed fix attempts
+- Tradeoff analysis
 
-Priorities:
-1. Complete the requested task
-2. Follow existing code patterns
-3. Verify before reporting done
-4. Stay within scope
+**Philosophy**: Pragmatic minimalism—simplest solution that works.
 
-### Worker Parameters
+**Output format**:
+- Advisory: Bottom line, action plan, effort estimate
+- Implementation: Summary, files modified, verification
 
-```typescript
-mcp__codex__codex({
-  prompt: "[Worker delegation format]",
-  sandbox: "workspace-write",
-  "approval-policy": "on-failure",
-  cwd: "/path/to/project",
-  "developer-instructions": "[prompts/worker.md content]"
-})
-```
+### Plan Reviewer
 
-### Worker Response Format
+**Specialty**: Plan validation, catching gaps and ambiguities
 
-1. **Summary**: What was done (1-2 sentences)
-2. **Files Modified**: List with brief descriptions
-3. **Verification**: What was checked, results
-4. **Issues**: Problems encountered (if any)
+**When to use**:
+- Before starting significant work
+- After creating a work plan
+- Before delegating to other agents
 
----
+**Philosophy**: Ruthlessly critical—finds every gap before work begins.
 
-## GPT (Codex) — Oracle Role
+**Output format**: APPROVE/REJECT with justification and criteria assessment
 
-**Tool:** `mcp__codex__codex`
+### Scope Analyst
 
-### When to Consult Oracle
+**Specialty**: Pre-planning analysis, requirements clarification
 
-| Situation | Trigger |
-|-----------|---------|
-| Architecture decisions | System design, database schemas, API design |
-| Complex debugging | After 2+ failed fix attempts |
-| Code review | Multi-system thinking, edge case identification |
-| Security analysis | Threat modeling, vulnerability assessment |
-| Tradeoff analysis | When multiple valid approaches exist |
-| Unfamiliar patterns | Domain-specific best practices |
+**When to use**:
+- Before planning unfamiliar work
+- When requirements feel vague
+- When multiple interpretations exist
+- Before irreversible decisions
 
-### Oracle Philosophy
+**Philosophy**: Surface problems before they derail work.
 
-The oracle operates with **pragmatic minimalism**:
+**Output format**: Intent classification, findings, questions, risks, recommendation
 
-> Favor the least complex solution that fulfills actual requirements over theoretically optimal approaches.
+### Code Reviewer
 
-Priorities:
-1. Existing code patterns in the codebase
-2. Developer experience
-3. Maintainability over cleverness
+**Specialty**: Code quality, bugs, maintainability
 
-### Oracle Parameters
+**When to use**:
+- Before merging significant changes
+- After implementing features (self-review)
+- For security-sensitive changes
 
-```typescript
-mcp__codex__codex({
-  prompt: "[Oracle delegation format]",
-  "approval-policy": "on-request",
-  "developer-instructions": "[prompts/oracle.md content]"
-})
-```
+**Philosophy**: Review like you'll maintain it at 2 AM during an incident.
 
-### Oracle Response Format
+**Output format**:
+- Advisory: Issues list with APPROVE/REQUEST CHANGES/REJECT
+- Implementation: Issues fixed, files modified, verification
 
-**Essential** (always provided):
-- Bottom line / recommendation
-- Action plan
-- Effort estimate: Quick / Short / Medium / Large
+### Security Analyst
 
-**Expanded** (when relevant):
-- Reasoning
-- Risk assessment
+**Specialty**: Vulnerabilities, threat modeling, security hardening
 
-**Edge cases** (only if applicable):
-- Escalation conditions
-- Alternatives
+**When to use**:
+- Authentication/authorization changes
+- Handling sensitive data
+- New API endpoints
+- Third-party integrations
+- Periodic security audits
 
----
+**Philosophy**: Attacker's mindset—find vulnerabilities before they do.
 
-## GPT (Codex) — Momus Role
-
-**Tool:** `mcp__codex__codex`
-
-### When to Use Momus
-
-| Situation | Trigger |
-|-----------|---------|
-| Plan validation | Before executing a multi-step plan |
-| Approach review | "Is this plan complete?" |
-| Gap identification | "What am I missing in this plan?" |
-
-### Momus Philosophy
-
-Momus operates with **ruthless critique**:
-
-> Find every gap, ambiguity, and missing context that would block implementation.
-
-Focus:
-1. Can this plan be executed as written?
-2. Are all requirements clear?
-3. Are verification criteria defined?
-4. Is context complete?
-
-### Momus Parameters
-
-```typescript
-mcp__codex__codex({
-  prompt: "[Momus delegation format]",
-  "approval-policy": "on-request",
-  "developer-instructions": "[prompts/momus.md content]"
-})
-```
-
-### Momus Response Format
-
-- **Verdict**: OKAY / REJECT
-- **Justification**: Why this verdict
-- **Issues**: Critical gaps (if REJECT)
-- **Summary**: Assessment of clarity, verifiability, completeness
-
----
-
-## When NOT to Delegate
-
-See `rules/triggers.md` for the complete list of when NOT to delegate.
-
-General rule: Don't delegate trivial tasks. If Claude can do it directly with confidence, do it.
-
----
-
-## Cost-Benefit Analysis
-
-### Worth the Cost
-
-- **Worker**: Substantial implementation tasks (not single-line fixes)
-- **Oracle**: Architectural decisions, security concerns, after 2+ failures
-- **Momus**: Complex plans before significant implementation
-
-### Not Worth the Cost
-
-- Questions Claude can answer directly
-- Trivial code changes
-- Style or formatting decisions
-- Simple CRUD operations
-- First attempt at any fix (for Oracle - try yourself first)
-
----
+**Output format**:
+- Advisory: Threat summary, vulnerabilities, risk rating
+- Implementation: Vulnerabilities fixed, files modified, verification
 
 ## Codex Parameters Reference
 
-| Parameter | Values | Default | Notes |
-|-----------|--------|---------|-------|
-| `approval-policy` | `untrusted`, `on-failure`, `on-request`, `never` | `on-request` | Controls tool approval |
-| `sandbox` | `read-only`, `workspace-write`, `danger-full-access` | `read-only` | File access level |
-| `cwd` | path | current | Working directory |
-| `developer-instructions` | string | - | System prompt injection |
+| Parameter | Values | Notes |
+|-----------|--------|-------|
+| `sandbox` | `read-only`, `workspace-write` | Set based on task, not expert |
+| `approval-policy` | `on-request`, `on-failure` | Advisory uses on-request, implementation uses on-failure |
+| `cwd` | path | Working directory for the task |
+| `developer-instructions` | string | Expert prompt injection |
 
-Model selection is handled by your Codex CLI configuration, not passed per-call.
+## When NOT to Delegate
+
+- Simple questions you can answer
+- First attempt at any fix
+- Trivial decisions
+- Research tasks (use other tools)
+- When user just wants quick info

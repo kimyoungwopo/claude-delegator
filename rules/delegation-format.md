@@ -1,18 +1,18 @@
 # Delegation Prompt Templates
 
-When delegating to external models, use these structured templates.
+When delegating to GPT experts, use these structured templates.
 
 ## The 7-Section Format (MANDATORY)
 
 Every delegation prompt MUST include these sections:
 
 ```
-1. TASK: [One sentence - atomic, specific goal]
+1. TASK: [One sentence—atomic, specific goal]
 
 2. EXPECTED OUTCOME: [What success looks like]
 
 3. CONTEXT:
-   - Current approach: [what's been tried]
+   - Current state: [what exists now]
    - Relevant code: [paths or snippets]
    - Background: [why this is needed]
 
@@ -24,212 +24,184 @@ Every delegation prompt MUST include these sections:
 5. MUST DO:
    - [Requirement 1]
    - [Requirement 2]
-   - [Be exhaustive]
 
 6. MUST NOT DO:
    - [Forbidden action 1]
    - [Forbidden action 2]
-   - [Anticipate rogue behavior]
 
 7. OUTPUT FORMAT:
    - [How to structure response]
-   - [What sections to include]
 ```
 
 ---
 
-## Oracle (GPT) Template
+## Expert-Specific Templates
 
-For architecture, debugging, code review, security analysis.
+### Architect
 
 ```markdown
-TASK: [Analyze/Review/Debug] [specific thing] to [achieve outcome].
+TASK: [Analyze/Design/Implement] [specific system/component] for [goal].
 
-EXPECTED OUTCOME: Clear recommendation with rationale, concerns identified, actionable next steps.
+EXPECTED OUTCOME: [Clear recommendation OR working implementation]
+
+MODE: [Advisory / Implementation]
 
 CONTEXT:
-- Current approach: We're using [pattern/architecture] because [reason].
+- Current architecture: [description]
 - Relevant code:
-  ```[language]
-  [code snippet or file:line reference]
-  ```
-- Problem: [What's not working or what decision needs to be made]
-- Prior attempts: [What's been tried, if applicable]
+  [file paths or snippets]
+- Problem/Goal: [what needs to be solved]
 
 CONSTRAINTS:
-- Must work with [framework/library] version [X]
-- Must maintain backward compatibility with [existing feature]
-- Cannot change [protected component/API]
-- Performance budget: [if applicable]
+- Must work with [existing systems]
+- Cannot change [protected components]
+- Performance requirements: [if applicable]
 
 MUST DO:
-- Analyze step by step, showing reasoning
-- Consider edge cases and failure modes
-- Identify potential issues before they become problems
-- Provide concrete, implementable recommendations
-- Cite specific code locations when relevant
+- [Specific requirement]
+- Provide effort estimate (Quick/Short/Medium/Large)
+- [For implementation: Report all modified files]
 
 MUST NOT DO:
-- Make assumptions about code you haven't seen
-- Suggest solutions that violate stated constraints
-- Provide vague or generic advice
-- Ignore error handling or edge cases
+- Over-engineer for hypothetical future needs
+- Introduce new dependencies without justification
+- [For implementation: Modify files outside scope]
 
 OUTPUT FORMAT:
-1. Summary (2-3 sentences)
-2. Analysis (step-by-step reasoning)
-3. Concerns (if any)
-4. Recommendation (specific, actionable)
-5. Implementation notes (if code changes needed)
+[Advisory: Bottom line → Action plan → Effort estimate]
+[Implementation: Summary → Files modified → Verification]
 ```
 
----
-
-## Momus (GPT) Template
-
-For plan review, validation, and critique before implementation.
+### Plan Reviewer
 
 ```markdown
-TASK: Review [plan/approach/design] for [project/feature] before implementation.
+TASK: Review [plan name/description] for completeness and clarity.
 
-EXPECTED OUTCOME: Honest critique identifying gaps, risks, and improvements.
+EXPECTED OUTCOME: APPROVE/REJECT verdict with specific feedback.
 
 CONTEXT:
-- Plan summary: [What's being proposed]
-- Goals: [What this is trying to achieve]
-- Constraints: [Technical/business limitations]
-- Timeline: [If relevant]
-
-CONSTRAINTS:
-- Must work within [existing architecture]
-- Cannot break [protected functionality]
-- Budget/time constraints: [if applicable]
+- Plan to review:
+  [plan content]
+- Goals: [what the plan is trying to achieve]
+- Constraints: [timeline, resources, technical limits]
 
 MUST DO:
-- Identify gaps, missing edge cases, and overlooked requirements
-- Point out risks and potential failure modes
-- Suggest concrete improvements
-- Be direct and honest, even if critical
-- Prioritize feedback by importance
+- Evaluate all 4 criteria (Clarity, Verifiability, Completeness, Big Picture)
+- Simulate actually doing the work to find gaps
+- Provide specific improvements if rejecting
 
 MUST NOT DO:
-- Rubber-stamp plans without real analysis
-- Provide vague or non-actionable feedback
-- Ignore obvious problems to be polite
-- Add unnecessary complexity
+- Rubber-stamp without real analysis
+- Provide vague feedback
+- Approve plans with critical gaps
 
 OUTPUT FORMAT:
-1. Overall assessment (go/no-go/needs work)
-2. Critical issues (must fix before proceeding)
-3. Risks identified (with mitigation suggestions)
-4. Improvements (nice-to-have enhancements)
-5. Questions (clarifications needed)
+[APPROVE / REJECT]
+Justification: [explanation]
+Summary: [4-criteria assessment]
+[If REJECT: Top 3-5 improvements needed]
 ```
 
----
-
-## Worker (GPT) Template
-
-For implementation tasks - executing code changes directly.
+### Scope Analyst
 
 ```markdown
-TASK: [Action verb] [specific thing] in [location].
+TASK: Analyze [request/feature] before planning begins.
 
-EXPECTED OUTCOME: [Thing] is [done/added/fixed/updated] and verified working.
-
-WORKING DIRECTORY: [absolute path to cwd]
-
-FILES TO MODIFY: [specific files if known, otherwise "discover as needed"]
+EXPECTED OUTCOME: Clear understanding of scope, risks, and questions to resolve.
 
 CONTEXT:
-- Purpose: [Why this change is needed]
-- Existing patterns: [Relevant conventions in this codebase]
-- Related files: [Files to reference for patterns/context]
+- Request: [what was asked for]
+- Current state: [what exists now]
+- Known constraints: [technical, business, timeline]
 
-REQUIREMENTS:
-- [Specific requirement 1]
-- [Specific requirement 2]
+MUST DO:
+- Classify intent (Refactoring/Build/Mid-sized/Architecture/Bug Fix/Research)
+- Identify hidden requirements and ambiguities
+- Surface questions that need answers before proceeding
+- Assess risks and blast radius
 
-VERIFICATION:
-- [How to verify: run tests, build, lint, etc.]
-- [Expected outcome of verification]
+MUST NOT DO:
+- Start planning (that comes after analysis)
+- Make assumptions about unclear requirements
+- Skip intent classification
 
-CONSTRAINTS:
-- Only modify files related to this task
-- Follow existing code patterns in the project
-- Report all files you modify
-- Do not refactor unrelated code
+OUTPUT FORMAT:
+Intent: [classification]
+Findings: [key discoveries]
+Questions: [what needs clarification]
+Risks: [with mitigations]
+Recommendation: [Proceed / Clarify First / Reconsider]
 ```
 
-### Worker Template Example
+### Code Reviewer
 
 ```markdown
-TASK: Add installation section to README.md.
+TASK: [Review / Review and fix] [code/PR/file] for [focus areas].
 
-EXPECTED OUTCOME: README has clear installation instructions with npm and yarn commands.
+EXPECTED OUTCOME: [Issue list with verdict OR fixed code]
 
-WORKING DIRECTORY: /Users/dev/my-project
-
-FILES TO MODIFY: README.md
+MODE: [Advisory / Implementation]
 
 CONTEXT:
-- Purpose: Users need to know how to install the package
-- Existing patterns: README uses ## headers, has Overview section already
-- Related files: package.json (for package name)
+- Code to review:
+  [file paths or snippets]
+- Purpose: [what this code does]
+- Recent changes: [what changed, if PR review]
 
-REQUIREMENTS:
-- Include npm install command
-- Include yarn add command
-- Place after Overview section
+MUST DO:
+- Prioritize: Correctness → Security → Performance → Maintainability
+- Focus on issues that matter, not style nitpicks
+- [For implementation: Fix issues and verify]
 
-VERIFICATION:
-- Confirm markdown renders correctly
-- Verify package name matches package.json
+MUST NOT DO:
+- Nitpick style (let formatters handle this)
+- Flag theoretical concerns unlikely to matter
+- [For implementation: Change unrelated code]
 
-CONSTRAINTS:
-- Only modify README.md
-- Match existing markdown style
-- Report the file modification
+OUTPUT FORMAT:
+[Advisory: Summary → Critical issues → Recommendations → Verdict]
+[Implementation: Summary → Issues fixed → Files modified → Verification]
+```
+
+### Security Analyst
+
+```markdown
+TASK: [Analyze / Harden] [system/code/endpoint] for security vulnerabilities.
+
+EXPECTED OUTCOME: [Vulnerability report OR hardened code]
+
+MODE: [Advisory / Implementation]
+
+CONTEXT:
+- Code/system to analyze:
+  [file paths, architecture description]
+- Assets at risk: [what's valuable]
+- Threat model: [who might attack, if known]
+
+MUST DO:
+- Check OWASP Top 10 categories
+- Consider authentication, authorization, input validation
+- Provide practical remediation, not theoretical concerns
+- [For implementation: Fix vulnerabilities and verify]
+
+MUST NOT DO:
+- Flag low-risk theoretical issues
+- Provide vague "be more secure" advice
+- [For implementation: Break functionality while hardening]
+
+OUTPUT FORMAT:
+[Advisory: Threat summary → Vulnerabilities → Recommendations → Risk rating]
+[Implementation: Summary → Vulnerabilities fixed → Files modified → Verification]
 ```
 
 ---
 
 ## Quick Reference
 
-| Role | Model | Template Focus |
-|------|-------|----------------|
-| Worker | GPT | Execute task, modify files, verify results |
-| Oracle | GPT | Deep analysis, tradeoffs, recommendations |
-| Momus | GPT | Plan review, critique, validation |
-
----
-
-## Anti-Patterns
-
-### Don't Do This
-
-```
-"Can you help me with this code?"
-```
-
-### Do This Instead
-
-```
-TASK: Review this authentication middleware for security vulnerabilities.
-
-EXPECTED OUTCOME: List of vulnerabilities with severity ratings and fixes.
-
-CONTEXT:
-- Current code:
-  [code snippet]
-- This handles: JWT validation for API routes
-- Deployed to: Production, ~10k requests/day
-
-...
-```
-
-The structured format ensures:
-- External model has full context
-- No ambiguity in what's expected
-- Consistent, actionable responses
-- Easier to verify the output meets requirements
+| Expert | Advisory Output | Implementation Output |
+|--------|-----------------|----------------------|
+| Architect | Recommendation + plan + effort | Changes + files + verification |
+| Plan Reviewer | APPROVE/REJECT + justification | Revised plan |
+| Scope Analyst | Analysis + questions + risks | Refined requirements |
+| Code Reviewer | Issues + verdict | Fixes + verification |
+| Security Analyst | Vulnerabilities + risk rating | Hardening + verification |

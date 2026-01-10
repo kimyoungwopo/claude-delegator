@@ -7,7 +7,7 @@ timeout: 60000
 
 # Setup
 
-Configure Codex (GPT) as an AI collaborator via native MCP. Supports three roles: Worker (execution), Oracle (advisory), and Momus (plan validation).
+Configure Codex (GPT) as specialized expert subagents via native MCP. Five domain experts that can advise OR implement.
 
 ## Step 1: Check Codex CLI
 
@@ -107,24 +107,31 @@ Next steps:
 1. Restart Claude Code to load MCP server
 2. Authenticate: Run `codex login` in terminal (if not already done)
 
-Three roles available:
+Five GPT experts available:
 
-┌─────────┬────────────────────────────────────────────────────┐
-│ Worker  │ "Add a section to the README"                      │
-│         │ "Fix the failing test"                             │
-│         │ "Implement feature X"                              │
-│         │ → Executes tasks directly, modifies files          │
-├─────────┼────────────────────────────────────────────────────┤
-│ Oracle  │ "What are the tradeoffs of X vs Y?"                │
-│         │ "Review this architecture"                         │
-│         │ "Is this secure?"                                  │
-│         │ → Strategic advice, analysis, recommendations      │
-├─────────┼────────────────────────────────────────────────────┤
-│ Momus   │ "Review this plan"                                 │
-│         │ "Validate my approach"                             │
-│         │ → Plan critique before implementation              │
-└─────────┴────────────────────────────────────────────────────┘
+┌──────────────────┬─────────────────────────────────────────────┐
+│ Architect        │ "How should I structure this service?"      │
+│                  │ "What are the tradeoffs of Redis vs X?"     │
+│                  │ → System design, architecture decisions     │
+├──────────────────┼─────────────────────────────────────────────┤
+│ Plan Reviewer    │ "Review this migration plan"                │
+│                  │ "Is this implementation plan complete?"     │
+│                  │ → Plan validation before execution          │
+├──────────────────┼─────────────────────────────────────────────┤
+│ Scope Analyst    │ "Clarify the scope of this feature"         │
+│                  │ "What am I missing in these requirements?"  │
+│                  │ → Pre-planning, catches ambiguities         │
+├──────────────────┼─────────────────────────────────────────────┤
+│ Code Reviewer    │ "Review this PR"                            │
+│                  │ "Find issues in this implementation"        │
+│                  │ → Code quality, bugs, maintainability       │
+├──────────────────┼─────────────────────────────────────────────┤
+│ Security Analyst │ "Is this authentication flow secure?"       │
+│                  │ "Harden this endpoint"                      │
+│                  │ → Vulnerabilities, threat modeling          │
+└──────────────────┴─────────────────────────────────────────────┘
 
-Role is auto-detected based on your request.
-Explicit override: "Ask GPT..." (Oracle) or "Have GPT implement..." (Worker)
+Every expert can advise (read-only) OR implement (write).
+Expert is auto-detected based on your request.
+Explicit: "Ask GPT to review..." or "Have GPT fix..."
 ```

@@ -1,7 +1,7 @@
 {
   "name": "claude-delegator",
-  "description": "GPT as a strategic advisor via Codex MCP. Oracle for architecture, debugging, and code review. Momus for plan validation.",
-  "version": "0.9.0",
+  "description": "GPT expert subagents for Claude Code via Codex CLI. Five specialized experts: Architect, Plan Reviewer, Scope Analyst, Code Reviewer, Security Analyst.",
+  "version": "1.0.0",
   "author": {
     "name": "Jarrod Watts",
     "url": "https://github.com/jarrodwatts"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/jarrodwatts/claude-delegator",
   "repository": "https://github.com/jarrodwatts/claude-delegator",
   "license": "MIT",
-  "keywords": ["delegation", "mcp", "codex", "gpt", "openai", "oracle", "orchestration"]
+  "keywords": ["delegation", "mcp", "codex", "gpt", "openai", "experts", "subagents", "orchestration"]
 }
