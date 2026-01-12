@@ -159,7 +159,6 @@ Claude: "분석 결과, 3가지 접근성 이슈를 발견했습니다..."
 |-----------|------|------|
 | **GPT** | `npm install -g @openai/codex` | `codex login` |
 | **Gemini** | `npm install -g @google/gemini-cli` | `gemini auth login` |
-| **Claude** | 내장 | 불필요 |
 
 ---
 
@@ -202,6 +201,8 @@ claude --plugin-dir /path/to/claude-delegator
 ---
 
 ## 감사의 말
+
+이 프로젝트는 [@jarrodwatts](https://github.com/jarrodwatts)의 [jarrodwatts/claude-delegator](https://github.com/jarrodwatts/claude-delegator)를 기반으로 제작되었습니다.
 
 전문가 프롬프트는 [@code-yeongyu](https://github.com/code-yeongyu)의 [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)에서 adapted 되었습니다.
 
