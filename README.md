@@ -1,9 +1,11 @@
 # Claude Delegator
 
-GPT expert subagents for Claude Code. Five specialists that can analyze AND implement—architecture, security, code review, and more.
+Multi-provider AI expert subagents for Claude Code. Seven specialists across GPT, Gemini, and Claude that can analyze AND implement—architecture, security, UI/UX, frontend, code review, and more.
 
 [![License](https://img.shields.io/github/license/jarrodwatts/claude-delegator?v=2)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/jarrodwatts/claude-delegator?v=2)](https://github.com/jarrodwatts/claude-delegator/stargazers)
+
+**[한국어 README](README.ko.md)**
 
 ![Claude Delegator in action](claude-delegator.png)
 
@@ -11,86 +13,106 @@ GPT expert subagents for Claude Code. Five specialists that can analyze AND impl
 
 Inside a Claude Code instance, run the following commands:
 
-**Step 1: Add the marketplace**
+**Step 1: Install CLIs**
+```bash
+npm install -g @openai/codex
+npm install -g @google/gemini-cli
+```
+
+**Step 2: Authenticate**
+```bash
+codex login
+gemini auth login
+```
+
+**Step 3: Add the marketplace**
 ```
 /plugin marketplace add jarrodwatts/claude-delegator
 ```
 
-**Step 2: Install the plugin**
+**Step 4: Install the plugin**
 ```
 /plugin install claude-delegator
 ```
 
-**Step 3: Run setup**
+**Step 5: Run setup**
 ```
 /claude-delegator:setup
 ```
 
-Done! Claude now routes complex tasks to GPT experts automatically.
-
-> **Note**: Requires [Codex CLI](https://github.com/openai/codex). Setup guides you through installation.
+Done! Claude now routes complex tasks to the right AI expert automatically.
 
 ---
 
 ## What is Claude Delegator?
 
-Claude gains a team of GPT specialists via native MCP. Each expert has a distinct specialty and can advise OR implement.
+Claude gains a team of AI specialists via MCP. Each expert has a distinct specialty and can advise OR implement.
 
 | What You Get | Why It Matters |
 |--------------|----------------|
-| **5 domain experts** | Right specialist for each problem type |
+| **7 domain experts** | Right specialist for each problem type |
+| **3 AI providers** | GPT, Gemini, and Claude working together |
 | **Dual mode** | Experts can analyze (read-only) or implement (write) |
-| **Auto-routing** | Claude detects when to delegate based on your request |
-| **Synthesized responses** | Claude interprets GPT output, never raw passthrough |
+| **Auto-routing** | Claude detects when and where to delegate |
+| **Cost-aware** | Routes to Claude (free) > Gemini (low) > GPT (higher) |
 
-### The Experts
+---
+
+## The Experts
+
+### GPT (via Codex CLI) — Architecture & Security
 
 | Expert | What They Do | Example Triggers |
 |--------|--------------|------------------|
 | **Architect** | System design, tradeoffs, complex debugging | "How should I structure this?" / "What are the tradeoffs?" |
-| **Plan Reviewer** | Validate plans before you start | "Review this migration plan" / "Is this approach sound?" |
-| **Scope Analyst** | Catch ambiguities early | "What am I missing?" / "Clarify the scope" |
-| **Code Reviewer** | Find bugs, improve quality | "Review this PR" / "What's wrong with this?" |
 | **Security Analyst** | Vulnerabilities, threat modeling | "Is this secure?" / "Harden this endpoint" |
 
-### When Experts Help Most
+### Gemini (via CLI) — UI/UX & Frontend
 
-- **Architecture decisions** — "Should I use Redis or in-memory caching?"
-- **Stuck debugging** — After 2+ failed attempts, get a fresh perspective
-- **Pre-implementation** — Validate your plan before writing code
-- **Security concerns** — "Is this auth flow safe?"
-- **Code quality** — Get a second opinion on your implementation
+| Expert | What They Do | Example Triggers |
+|--------|--------------|------------------|
+| **UI/UX Designer** | Design systems, accessibility, visual review | "Review this design" / "Check accessibility" |
+| **Frontend Specialist** | React/Vue optimization, performance | "Optimize this component" / "Reduce bundle size" |
 
-### When NOT to Use Experts
+### Claude (Direct) — Code Quality & Planning
 
-- Simple file operations (Claude handles these directly)
-- First attempt at any fix (try yourself first)
-- Trivial questions (no need to delegate)
+| Expert | What They Do | Example Triggers |
+|--------|--------------|------------------|
+| **Code Reviewer** | Find bugs, improve quality | "Review this PR" / "What's wrong with this?" |
+| **Plan Reviewer** | Validate plans before you start | "Review this migration plan" |
+| **Scope Analyst** | Catch ambiguities early | "What am I missing?" / "Clarify the scope" |
 
 ---
 
 ## How It Works
 
 ```
-You: "Is this authentication flow secure?"
+You: "Review this UI design"
                     ↓
-Claude: [Detects security question → selects Security Analyst]
+Claude: [Detects UI task → selects Gemini UI/UX Designer]
                     ↓
         ┌─────────────────────────────┐
-        │  mcp__codex__codex          │
-        │  → Security Analyst prompt  │
-        │  → GPT analyzes your code   │
+        │  mcp__gemini__gemini        │
+        │  → UI/UX Designer prompt    │
+        │  → Gemini analyzes design   │
         └─────────────────────────────┘
                     ↓
-Claude: "Based on the analysis, I found 3 issues..."
+Claude: "Based on the analysis, I found 3 accessibility issues..."
         [Synthesizes response, applies judgment]
 ```
 
-**Key details:**
-- Each expert has a specialized system prompt (in `prompts/`)
-- Claude reads your request → picks the right expert → delegates via MCP
-- Responses are synthesized, not passed through raw
-- Experts can retry up to 3 times before escalating
+### Provider Routing
+
+| Task Type | Provider | Expert |
+|-----------|----------|--------|
+| System architecture | GPT | Architect |
+| Security audit | GPT | Security Analyst |
+| UI/UX review | Gemini | UI/UX Designer |
+| Frontend optimization | Gemini | Frontend Specialist |
+| Screenshot analysis | Gemini | (vision) |
+| Code review | Claude | Code Reviewer |
+| Plan validation | Claude | Plan Reviewer |
+| Scope clarification | Claude | Scope Analyst |
 
 ---
 
@@ -105,8 +127,6 @@ Every expert supports two modes based on the task:
 | **Advisory** | `read-only` | Analysis, recommendations, reviews |
 | **Implementation** | `workspace-write` | Making changes, fixing issues |
 
-Claude automatically selects the mode based on your request.
-
 ### Manual MCP Setup
 
 If `/setup` doesn't work, manually add to `~/.claude/settings.json`:
@@ -118,6 +138,11 @@ If `/setup` doesn't work, manually add to `~/.claude/settings.json`:
       "type": "stdio",
       "command": "codex",
       "args": ["-m", "gpt-5.2-codex", "mcp-server"]
+    },
+    "gemini": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/claude-delegator/mcp-servers/gemini-server/dist/index.js"]
     }
   }
 }
@@ -125,20 +150,17 @@ If `/setup` doesn't work, manually add to `~/.claude/settings.json`:
 
 ### Customizing Expert Prompts
 
-Expert prompts live in `prompts/`. Each follows the same structure:
-- Role definition and context
-- Advisory vs Implementation modes
-- Response format guidelines
-- When to invoke / when NOT to invoke
-
-Edit these to customize expert behavior for your workflow.
+Expert prompts live in `prompts/`. Edit these to customize expert behavior for your workflow.
 
 ---
 
 ## Requirements
 
-- **Codex CLI**: `npm install -g @openai/codex`
-- **Authentication**: Run `codex login` after installation
+| Provider | Install | Auth |
+|----------|---------|------|
+| **GPT** | `npm install -g @openai/codex` | `codex login` |
+| **Gemini** | `npm install -g @google/gemini-cli` | `gemini auth login` |
+| **Claude** | Built-in | None needed |
 
 ---
 
@@ -146,7 +168,7 @@ Edit these to customize expert behavior for your workflow.
 
 | Command | Description |
 |---------|-------------|
-| `/claude-delegator:setup` | Configure MCP server and install rules |
+| `/claude-delegator:setup` | Configure MCP servers and install rules |
 | `/claude-delegator:uninstall` | Remove MCP config and rules |
 
 ---
@@ -157,8 +179,8 @@ Edit these to customize expert behavior for your workflow.
 |-------|----------|
 | MCP server not found | Restart Claude Code after setup |
 | Codex not authenticated | Run `codex login` |
-| Tool not appearing | Check `~/.claude/settings.json` has codex entry |
-| Expert not triggered | Try explicit: "Ask GPT to review this architecture" |
+| Gemini not authenticated | Run `gemini auth login` |
+| Expert not triggered | Try explicit: "Ask GPT to..." or "Use Gemini for..." |
 
 ---
 
@@ -168,7 +190,11 @@ Edit these to customize expert behavior for your workflow.
 git clone https://github.com/jarrodwatts/claude-delegator
 cd claude-delegator
 
-# Test locally without reinstalling
+# Build Gemini MCP server
+cd mcp-servers/gemini-server
+npm install && npm run build
+
+# Test locally
 claude --plugin-dir /path/to/claude-delegator
 ```
 
