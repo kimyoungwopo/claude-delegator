@@ -2,7 +2,7 @@
   "providers": {
     "codex": {
       "name": "Codex (GPT)",
-      "description": "OpenAI GPT models via Codex CLI - specialized expert subagents",
+      "description": "OpenAI GPT models via Codex CLI - specialized for architecture and security",
       "cli": "codex",
       "install": "npm install -g @openai/codex",
       "auth": "codex login",
@@ -11,9 +11,35 @@
         "command": "codex",
         "args": ["-m", "gpt-5.2-codex", "mcp-server"]
       },
-      "experts": ["architect", "plan-reviewer", "scope-analyst", "code-reviewer", "security-analyst"],
-      "strengths": ["architecture", "code-review", "security", "requirements-analysis", "plan-validation"],
-      "avoid": ["simple-operations", "trivial-decisions", "research", "first-attempt-fixes"]
+      "experts": ["architect", "security-analyst"],
+      "strengths": ["architecture", "security", "system-design", "complex-debugging"],
+      "avoid": ["simple-operations", "trivial-decisions", "ui-design"]
+    },
+    "gemini": {
+      "name": "Gemini",
+      "description": "Google Gemini via CLI - specialized for UI/UX and frontend development",
+      "cli": "gemini",
+      "install": "npm install -g @google/gemini-cli",
+      "auth": "gemini auth login",
+      "mcp": {
+        "type": "stdio",
+        "command": "node",
+        "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
+      },
+      "experts": ["ui-ux-designer", "frontend-specialist"],
+      "strengths": ["ui-design", "frontend", "visual-analysis", "component-architecture", "accessibility"],
+      "avoid": ["backend-logic", "security-analysis", "system-architecture"]
+    },
+    "claude": {
+      "name": "Claude (Self)",
+      "description": "Claude handles directly - code review, planning, and scope analysis",
+      "cli": null,
+      "install": null,
+      "auth": null,
+      "mcp": null,
+      "experts": ["code-reviewer", "plan-reviewer", "scope-analyst"],
+      "strengths": ["code-quality", "plan-validation", "requirements-analysis", "general-reasoning"],
+      "avoid": []
     }
   }
 }

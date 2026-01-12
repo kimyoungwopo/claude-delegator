@@ -1,13 +1,13 @@
 ---
 name: setup
-description: Configure claude-delegator with Codex MCP server
+description: Configure claude-delegator with GPT (Codex) and Gemini CLI
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
-timeout: 60000
+timeout: 120000
 ---
 
 # Setup
 
-Configure Codex (GPT) as specialized expert subagents via native MCP. Five domain experts that can advise OR implement.
+Configure multi-provider expert subagents: GPT (Codex CLI), Gemini (CLI), and Claude (direct).
 
 ## Step 1: Check Codex CLI
 
@@ -27,15 +27,47 @@ Then authenticate: codex login
 After installation, re-run /claude-delegator:setup
 ```
 
-**STOP here if Codex is not installed.**
+**Note: Continue to Step 2 even if Codex is missing (Gemini can work independently).**
 
-## Step 2: Read Current Settings
+## Step 2: Check Gemini CLI
+
+```bash
+which gemini 2>/dev/null && gemini --version 2>&1 | head -1 || echo "GEMINI_MISSING"
+```
+
+### If Missing
+
+Tell user:
+```
+Gemini CLI not found.
+
+Install with: npm install -g @google/gemini-cli
+Then authenticate: gemini auth login
+
+After installation, re-run /claude-delegator:setup
+```
+
+**Note: Continue even if Gemini is missing (GPT can work independently).**
+
+## Step 3: Check Gemini MCP Server Build
+
+```bash
+ls ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js 2>/dev/null || echo "GEMINI_NOT_BUILT"
+```
+
+### If Not Built
+
+```bash
+cd ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server && npm install && npm run build
+```
+
+## Step 4: Read Current Settings
 
 ```bash
 cat ~/.claude/settings.json 2>/dev/null || echo "{}"
 ```
 
-## Step 3: Configure MCP Server
+## Step 5: Configure MCP Servers
 
 Merge into `~/.claude/settings.json`:
 
@@ -46,99 +78,140 @@ Merge into `~/.claude/settings.json`:
       "type": "stdio",
       "command": "codex",
       "args": ["-m", "gpt-5.2-codex", "mcp-server"]
+    },
+    "gemini": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
     }
   }
 }
 ```
 
-Note: Use `gpt-5.2-codex` explicitly for the latest model.
-
 **CRITICAL**:
+- Replace `${CLAUDE_PLUGIN_ROOT}` with actual plugin path
 - Merge with existing settings, don't overwrite
 - Preserve any existing `mcpServers` entries
 
-## Step 4: Install Orchestration Rules
+## Step 6: Install Orchestration Rules
 
 ```bash
 mkdir -p ~/.claude/rules/delegator && cp ${CLAUDE_PLUGIN_ROOT}/rules/*.md ~/.claude/rules/delegator/
 ```
 
-## Step 5: Verify Installation
+## Step 7: Verify Installation
 
 Run these checks and report results:
 
 ```bash
 # Check 1: Codex CLI version
-codex --version 2>&1 | head -1
+codex --version 2>&1 | head -1 || echo "Not installed"
 
-# Check 2: MCP server configured
-cat ~/.claude/settings.json | jq -r '.mcpServers.codex.args | join(" ")' 2>/dev/null
+# Check 2: Gemini CLI version
+gemini --version 2>&1 | head -1 || echo "Not installed"
 
-# Check 3: Rules installed (count files)
+# Check 3: Codex MCP configured
+cat ~/.claude/settings.json | jq -r '.mcpServers.codex.command // "Not configured"' 2>/dev/null
+
+# Check 4: Gemini MCP configured
+cat ~/.claude/settings.json | jq -r '.mcpServers.gemini.command // "Not configured"' 2>/dev/null
+
+# Check 5: Gemini server built
+ls ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js 2>/dev/null && echo "Built" || echo "Not built"
+
+# Check 6: Rules installed (count files)
 ls ~/.claude/rules/delegator/*.md 2>/dev/null | wc -l
 
-# Check 4: Auth status (check if logged in)
-codex login status 2>&1 | head -1 || echo "Run 'codex login' to authenticate"
+# Check 7: Codex auth status
+codex login status 2>&1 | head -1 || echo "Not authenticated"
+
+# Check 8: Gemini auth status
+gemini auth status 2>&1 | head -1 || echo "Not authenticated"
 ```
 
-## Step 6: Report Status
+## Step 8: Report Status
 
 Display actual values from the checks above:
 
 ```
-claude-delegator Status
-───────────────────────────────────────────────────
-Codex CLI:     ✓ [version from check 1]
-Model:         ✓ gpt-5.2-codex (or ✗ if not configured)
-MCP Config:    ✓ ~/.claude/settings.json (or ✗ if missing)
-Rules:         ✓ [N] files in ~/.claude/rules/delegator/
-Auth:          [status from check 4]
-───────────────────────────────────────────────────
+claude-delegator Status (Multi-Provider)
+═══════════════════════════════════════════════════════════════
+
+GPT (Codex CLI)
+───────────────────────────────────────────────────────────────
+  CLI:         [✓/✗] [version or "Not installed"]
+  MCP Config:  [✓/✗] codex mcp-server
+  Auth:        [✓/✗] [status - run `codex login` if needed]
+
+Gemini (CLI)
+───────────────────────────────────────────────────────────────
+  CLI:         [✓/✗] [version or "Not installed"]
+  MCP Server:  [✓/✗] [Built or "Not built"]
+  MCP Config:  [✓/✗] gemini-server
+  Auth:        [✓/✗] [status - run `gemini auth login` if needed]
+
+Claude (Direct)
+───────────────────────────────────────────────────────────────
+  Status:      ✓ Always available (no setup needed)
+
+Rules
+───────────────────────────────────────────────────────────────
+  Installed:   [✓/✗] [N] files in ~/.claude/rules/delegator/
+
+═══════════════════════════════════════════════════════════════
 ```
 
 If any check fails, report the specific issue and how to fix it.
 
-## Step 7: Final Instructions
+## Step 9: Final Instructions
 
 ```
 Setup complete!
 
-Next steps:
-1. Restart Claude Code to load MCP server
-2. Authenticate: Run `codex login` in terminal (if not already done)
+Authentication commands (run in terminal):
+• GPT:    codex login
+• Gemini: gemini auth login
 
-Five GPT experts available:
+Restart Claude Code to load MCP servers.
 
-┌──────────────────┬─────────────────────────────────────────────┐
-│ Architect        │ "How should I structure this service?"      │
-│                  │ "What are the tradeoffs of Redis vs X?"     │
-│                  │ → System design, architecture decisions     │
-├──────────────────┼─────────────────────────────────────────────┤
-│ Plan Reviewer    │ "Review this migration plan"                │
-│                  │ "Is this implementation plan complete?"     │
-│                  │ → Plan validation before execution          │
-├──────────────────┼─────────────────────────────────────────────┤
-│ Scope Analyst    │ "Clarify the scope of this feature"         │
-│                  │ "What am I missing in these requirements?"  │
-│                  │ → Pre-planning, catches ambiguities         │
-├──────────────────┼─────────────────────────────────────────────┤
-│ Code Reviewer    │ "Review this PR"                            │
-│                  │ "Find issues in this implementation"        │
-│                  │ → Code quality, bugs, maintainability       │
-├──────────────────┼─────────────────────────────────────────────┤
-│ Security Analyst │ "Is this authentication flow secure?"       │
-│                  │ "Harden this endpoint"                      │
-│                  │ → Vulnerabilities, threat modeling          │
-└──────────────────┴─────────────────────────────────────────────┘
+Seven experts across three providers:
 
-Every expert can advise (read-only) OR implement (write).
-Expert is auto-detected based on your request.
-Explicit: "Ask GPT to review..." or "Have GPT fix..."
+┌─────────────────────────────────────────────────────────────────────────┐
+│ GPT (Codex) - Architecture & Security                                   │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ Architect        │ "How should I structure this service?"               │
+│                  │ → System design, tradeoffs, complex debugging        │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Security Analyst │ "Is this authentication flow secure?"                │
+│                  │ → Vulnerabilities, threat modeling, hardening        │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Gemini - UI/UX & Frontend                                               │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ UI/UX Designer   │ "Review this design" (supports screenshots!)         │
+│                  │ → Design systems, accessibility, visual review       │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Frontend         │ "Optimize this React component"                      │
+│ Specialist       │ → Performance, state management, CSS architecture    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Claude (Direct) - Code Quality & Planning                               │
+├──────────────────┬──────────────────────────────────────────────────────┤
+│ Code Reviewer    │ "Review this PR"                                     │
+│                  │ → Code quality, bugs, maintainability                │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Plan Reviewer    │ "Review this migration plan"                         │
+│                  │ → Plan validation before execution                   │
+├──────────────────┼──────────────────────────────────────────────────────┤
+│ Scope Analyst    │ "Clarify the scope of this feature"                  │
+│                  │ → Pre-planning, catches ambiguities                  │
+└──────────────────┴──────────────────────────────────────────────────────┘
+
+Provider is auto-detected based on task type.
+Explicit: "GPT로 아키텍처 분석해줘" or "Gemini로 디자인 리뷰해줘"
 ```
 
-## Step 8: Ask About Starring
+## Step 10: Ask About Starring
 
-Use AskUserQuestion to ask the user if they'd like to ⭐ star the claude-delegator repository on GitHub to support the project.
+Use AskUserQuestion to ask the user if they'd like to star the repository on GitHub to support the project.
 
 Options: "Yes, star the repo" / "No thanks"
 

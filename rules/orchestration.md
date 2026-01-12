@@ -1,37 +1,67 @@
 # Model Orchestration
 
-You have access to GPT experts via MCP tools. Use them strategically based on these guidelines.
+You have access to multiple AI experts via MCP tools. Use them strategically based on these guidelines.
 
 ## Available Tools
 
 | Tool | Provider | Use For |
 |------|----------|---------|
-| `mcp__codex__codex` | GPT | Delegate to an expert (stateless) |
+| `mcp__codex__codex` | GPT | Architecture, Security (stateless) |
+| `mcp__gemini__gemini` | Gemini | UI/UX, Frontend (stateless) |
+| `mcp__gemini__gemini-vision` | Gemini | Image/screenshot analysis |
+| **Direct (Claude)** | Self | Code review, Planning, Scope analysis |
 
-> **Note:** `codex-reply` exists but requires a session ID not currently exposed to Claude Code. Each delegation is independent—include full context in every call.
+> **Note:** Each MCP delegation is independent—include full context in every call.
 
 ## Available Experts
+
+### GPT Experts (via Codex)
 
 | Expert | Specialty | Prompt File |
 |--------|-----------|-------------|
 | **Architect** | System design, tradeoffs, complex debugging | `${CLAUDE_PLUGIN_ROOT}/prompts/architect.md` |
+| **Security Analyst** | Vulnerabilities, threat modeling | `${CLAUDE_PLUGIN_ROOT}/prompts/security-analyst.md` |
+
+### Gemini Experts
+
+| Expert | Specialty | Prompt File |
+|--------|-----------|-------------|
+| **UI/UX Designer** | Design systems, accessibility, visual review | `${CLAUDE_PLUGIN_ROOT}/prompts/ui-ux-designer.md` |
+| **Frontend Specialist** | React/Vue, performance, CSS architecture | `${CLAUDE_PLUGIN_ROOT}/prompts/frontend-specialist.md` |
+
+### Claude Experts (Handle Directly)
+
+| Expert | Specialty | Prompt File |
+|--------|-----------|-------------|
+| **Code Reviewer** | Code quality, bugs, best practices | `${CLAUDE_PLUGIN_ROOT}/prompts/code-reviewer.md` |
 | **Plan Reviewer** | Plan validation before execution | `${CLAUDE_PLUGIN_ROOT}/prompts/plan-reviewer.md` |
 | **Scope Analyst** | Pre-planning, catching ambiguities | `${CLAUDE_PLUGIN_ROOT}/prompts/scope-analyst.md` |
-| **Code Reviewer** | Code quality, bugs, security issues | `${CLAUDE_PLUGIN_ROOT}/prompts/code-reviewer.md` |
-| **Security Analyst** | Vulnerabilities, threat modeling | `${CLAUDE_PLUGIN_ROOT}/prompts/security-analyst.md` |
+
+---
+
+## Provider Selection Guide
+
+| Task Type | Provider | Expert | Why |
+|-----------|----------|--------|-----|
+| System architecture | GPT | Architect | Complex reasoning |
+| Security audit | GPT | Security Analyst | Security expertise |
+| UI/UX review | Gemini | UI/UX Designer | Multimodal, design focus |
+| Frontend optimization | Gemini | Frontend Specialist | Large context, fast |
+| Screenshot analysis | Gemini | (vision) | Multimodal capability |
+| Code review | Claude | Code Reviewer | Direct, no latency |
+| Plan validation | Claude | Plan Reviewer | Direct, no latency |
+| Scope clarification | Claude | Scope Analyst | Direct, no latency |
 
 ---
 
 ## Stateless Design
 
-**Each delegation is independent.** The expert has no memory of previous calls.
+**Each MCP delegation is independent.** The expert has no memory of previous calls.
 
 **Implications:**
 - Include ALL relevant context in every delegation prompt
 - For retries, include what was attempted and what failed
 - Don't assume the expert remembers previous interactions
-
-**Why:** Codex MCP returns session IDs in event notifications, but Claude Code only surfaces the final text response. Until this changes, treat each call as fresh.
 
 ---
 
@@ -39,14 +69,17 @@ You have access to GPT experts via MCP tools. Use them strategically based on th
 
 Before handling any request, check if an expert would help:
 
-| Signal | Expert |
-|--------|--------|
-| Architecture/design decision | Architect |
-| 2+ failed fix attempts on same issue | Architect (fresh perspective) |
-| "Review this plan", "validate approach" | Plan Reviewer |
-| Vague/ambiguous requirements | Scope Analyst |
-| "Review this code", "find issues" | Code Reviewer |
-| Security concerns, "is this secure" | Security Analyst |
+| Signal | Provider | Expert |
+|--------|----------|--------|
+| Architecture/design decision | GPT | Architect |
+| 2+ failed fix attempts on same issue | GPT | Architect (fresh perspective) |
+| Security concerns, "is this secure" | GPT | Security Analyst |
+| UI/UX review, "design feedback" | Gemini | UI/UX Designer |
+| Frontend performance, "React optimize" | Gemini | Frontend Specialist |
+| Screenshot/image analysis | Gemini | (vision tool) |
+| "Review this plan", "validate approach" | Claude | Plan Reviewer |
+| Vague/ambiguous requirements | Claude | Scope Analyst |
+| "Review this code", "find issues" | Claude | Code Reviewer |
 
 **If a signal matches → delegate to the appropriate expert.**
 
@@ -54,14 +87,14 @@ Before handling any request, check if an expert would help:
 
 ## REACTIVE Delegation (Explicit User Request)
 
-When user explicitly requests GPT/Codex:
+When user explicitly requests a provider:
 
 | User Says | Action |
 |-----------|--------|
-| "ask GPT", "consult GPT", "ask codex" | Identify task type → route to appropriate expert |
-| "ask GPT to review the architecture" | Delegate to Architect |
-| "have GPT review this code" | Delegate to Code Reviewer |
-| "GPT security review" | Delegate to Security Analyst |
+| "ask GPT", "consult GPT" | Route to GPT expert based on context |
+| "ask Gemini", "use Gemini" | Route to Gemini expert based on context |
+| "GPT로", "GPT한테" | Route to GPT |
+| "Gemini로", "제미나이한테" | Route to Gemini |
 
 **Always honor explicit requests.**
 
@@ -71,8 +104,8 @@ When user explicitly requests GPT/Codex:
 
 When delegation is triggered:
 
-### Step 1: Identify Expert
-Match the task to the appropriate expert based on triggers.
+### Step 1: Identify Expert & Provider
+Match the task to the appropriate expert and provider based on triggers.
 
 ### Step 2: Read Expert Prompt
 **CRITICAL**: Read the expert's prompt file to get their system instructions:
@@ -80,8 +113,6 @@ Match the task to the appropriate expert based on triggers.
 ```
 Read ${CLAUDE_PLUGIN_ROOT}/prompts/[expert].md
 ```
-
-For example, for Architect: `Read ${CLAUDE_PLUGIN_ROOT}/prompts/architect.md`
 
 ### Step 3: Determine Mode
 | Task Type | Mode | Sandbox |
@@ -92,26 +123,43 @@ For example, for Architect: `Read ${CLAUDE_PLUGIN_ROOT}/prompts/architect.md`
 ### Step 4: Notify User
 Always inform the user before delegating:
 ```
-Delegating to [Expert Name]: [brief task summary]
+Delegating to [Expert Name] ([Provider]): [brief task summary]
 ```
 
 ### Step 5: Build Delegation Prompt
 Use the 7-section format from `rules/delegation-format.md`.
 
-**IMPORTANT:** Since each call is stateless, include FULL context:
-- What the user asked for
-- Relevant code/files
-- Any previous attempts and their results (for retries)
-
 ### Step 6: Call the Expert
+
+**For GPT (Codex):**
 ```typescript
 mcp__codex__codex({
-  prompt: "[your 7-section delegation prompt with FULL context]",
+  prompt: "[your 7-section delegation prompt]",
   "developer-instructions": "[contents of the expert's prompt file]",
-  sandbox: "[read-only or workspace-write based on mode]",
+  sandbox: "[read-only or workspace-write]",
   cwd: "[current working directory]"
 })
 ```
+
+**For Gemini:**
+```typescript
+mcp__gemini__gemini({
+  prompt: "[your 7-section delegation prompt]",
+  "developer-instructions": "[contents of the expert's prompt file]",
+  model: "gemini-2.5-pro"  // or gemini-2.0-flash for speed
+})
+```
+
+**For Gemini Vision (screenshots):**
+```typescript
+mcp__gemini__gemini-vision({
+  prompt: "[your question about the image]",
+  imagePath: "[path to screenshot]"
+})
+```
+
+**For Claude (direct):**
+Handle directly using the expert's prompt as guidance. No MCP call needed.
 
 ### Step 7: Handle Response
 1. **Synthesize** - Never show raw output directly
@@ -123,37 +171,45 @@ mcp__codex__codex({
 
 ## Retry Flow (Implementation Mode)
 
-When implementation fails verification, retry with a NEW call including error context:
+When implementation fails verification:
 
 ```
 Attempt 1 → Verify → [Fail]
      ↓
-Attempt 2 (new call with: original task + what was tried + error details) → Verify → [Fail]
+Attempt 2 (new call with: original task + what was tried + error details)
      ↓
-Attempt 3 (new call with: full history of attempts) → Verify → [Fail]
+Attempt 3 (new call with: full history)
      ↓
 Escalate to user
 ```
 
-### Retry Prompt Template
+---
 
-```markdown
-TASK: [Original task]
+## Example: UI/UX Review with Screenshot
 
-PREVIOUS ATTEMPT:
-- What was done: [summary of changes made]
-- Error encountered: [exact error message]
-- Files modified: [list]
+User: "Review this design" (attaches screenshot)
 
-CONTEXT:
-- [Full original context]
+**Step 1**: Signal matches "UI/UX review" → Gemini → UI/UX Designer
 
-REQUIREMENTS:
-- Fix the error from the previous attempt
-- [Original requirements]
+**Step 2**: Read `${CLAUDE_PLUGIN_ROOT}/prompts/ui-ux-designer.md`
+
+**Step 3**: Advisory mode → `read-only`
+
+**Step 4**: "Delegating to UI/UX Designer (Gemini): Analyze design screenshot"
+
+**Step 5-6**:
+```typescript
+mcp__gemini__gemini-vision({
+  prompt: `Analyze this UI design for:
+- Visual hierarchy and layout
+- Accessibility concerns
+- Responsive design considerations
+- Consistency with modern design patterns`,
+  imagePath: "/path/to/screenshot.png"
+})
 ```
 
-**Key:** Each retry is a fresh call. The expert doesn't know what happened before unless you tell them.
+**Step 7**: Synthesize response with your assessment.
 
 ---
 
@@ -161,56 +217,23 @@ REQUIREMENTS:
 
 User: "What are the tradeoffs of Redis vs in-memory caching?"
 
-**Step 1**: Signal matches "Architecture decision" → Architect
+**Step 1**: Signal matches "Architecture decision" → GPT → Architect
 
 **Step 2**: Read `${CLAUDE_PLUGIN_ROOT}/prompts/architect.md`
 
-**Step 3**: Advisory mode (question, not implementation) → `read-only`
+**Step 3**: Advisory mode → `read-only`
 
-**Step 4**: "Delegating to Architect: Analyze caching tradeoffs"
+**Step 4**: "Delegating to Architect (GPT): Analyze caching tradeoffs"
 
 **Step 5-6**:
 ```typescript
 mcp__codex__codex({
-  prompt: `TASK: Analyze tradeoffs between Redis and in-memory caching for [context].
+  prompt: `TASK: Analyze tradeoffs between Redis and in-memory caching.
 EXPECTED OUTCOME: Clear recommendation with rationale.
-CONTEXT: [user's situation, full details]
+CONTEXT: [user's situation]
 ...`,
   "developer-instructions": "[contents of architect.md]",
   sandbox: "read-only"
-})
-```
-
-**Step 7**: Synthesize response, add your assessment.
-
----
-
-## Example: Retry After Failed Implementation
-
-First attempt failed with "TypeError: Cannot read property 'x' of undefined"
-
-**Retry call:**
-```typescript
-mcp__codex__codex({
-  prompt: `TASK: Add input validation to the user registration endpoint.
-
-PREVIOUS ATTEMPT:
-- Added validation middleware to routes/auth.ts
-- Error: TypeError: Cannot read property 'x' of undefined at line 45
-- The middleware was added but req.body was undefined
-
-CONTEXT:
-- Express 4.x application
-- Body parser middleware exists in app.ts
-- [relevant code snippets]
-
-REQUIREMENTS:
-- Fix the undefined req.body issue
-- Ensure validation runs after body parser
-- Report all files modified`,
-  "developer-instructions": "[contents of code-reviewer.md or architect.md]",
-  sandbox: "workspace-write",
-  cwd: "/path/to/project"
 })
 ```
 
@@ -218,9 +241,15 @@ REQUIREMENTS:
 
 ## Cost Awareness
 
-- **Don't spam** - One well-structured delegation beats multiple vague ones
-- **Include full context** - Saves retry costs from missing information
-- **Reserve for high-value tasks** - Architecture, security, complex analysis
+| Provider | Cost | Speed | Use For |
+|----------|------|-------|---------|
+| Claude (direct) | Free | Fastest | Default for code review, planning |
+| Gemini | Low | Fast | UI/UX, frontend, vision tasks |
+| GPT | Higher | Medium | Architecture, security (high-value) |
+
+- **Prefer Claude** for tasks it handles well (no external call overhead)
+- **Use Gemini** for visual/frontend work (cost-effective, multimodal)
+- **Reserve GPT** for architecture and security (high-value decisions)
 
 ---
 
@@ -230,7 +259,7 @@ REQUIREMENTS:
 |---------------|-----------------|
 | Delegate trivial questions | Answer directly |
 | Show raw expert output | Synthesize and interpret |
-| Delegate without reading prompt file | ALWAYS read and inject expert prompt |
+| Use GPT for UI tasks | Use Gemini (multimodal) |
+| Use Gemini for security | Use GPT (specialized) |
 | Skip user notification | ALWAYS notify before delegating |
-| Retry without including error context | Include FULL history of what was tried |
-| Assume expert remembers previous calls | Include all context in every call |
+| Forget to include context | Include FULL history in every call |
