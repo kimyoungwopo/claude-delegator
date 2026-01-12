@@ -2,8 +2,8 @@
 
 Claude Code를 위한 멀티 프로바이더 AI 전문가 서브에이전트. GPT, Gemini, Claude를 아우르는 7명의 전문가가 분석과 구현을 모두 수행합니다—아키텍처, 보안, UI/UX, 프론트엔드, 코드 리뷰 등.
 
-[![License](https://img.shields.io/github/license/jarrodwatts/claude-delegator?v=2)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/jarrodwatts/claude-delegator?v=2)](https://github.com/jarrodwatts/claude-delegator/stargazers)
+[![License](https://img.shields.io/github/license/kimyoungwopo/claude-delegator?v=2)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/kimyoungwopo/claude-delegator?v=2)](https://github.com/kimyoungwopo/claude-delegator/stargazers)
 
 **[English README](README.md)**
 
@@ -27,7 +27,7 @@ gemini auth login
 
 **Step 3: 마켓플레이스 추가**
 ```
-/plugin marketplace add jarrodwatts/claude-delegator
+/plugin marketplace add kimyoungwopo/claude-delegator
 ```
 
 **Step 4: 플러그인 설치**
@@ -185,7 +185,7 @@ Claude: "분석 결과, 3가지 접근성 이슈를 발견했습니다..."
 ## 개발
 
 ```bash
-git clone https://github.com/jarrodwatts/claude-delegator
+git clone https://github.com/kimyoungwopo/claude-delegator
 cd claude-delegator
 
 # Gemini MCP 서버 빌드
@@ -216,4 +216,4 @@ MIT — [LICENSE](LICENSE) 참조
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jarrodwatts/claude-delegator&type=Date&v=2)](https://star-history.com/#jarrodwatts/claude-delegator&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=kimyoungwopo/claude-delegator&type=Date&v=2)](https://star-history.com/#kimyoungwopo/claude-delegator&Date)

@@ -3,11 +3,11 @@
   "description": "Multi-provider expert subagents for Claude Code. GPT (architecture, security), Gemini (UI/UX, frontend), and Claude (code review, planning). Seven specialists via MCP.",
   "version": "2.0.0",
   "author": {
-    "name": "Jarrod Watts",
-    "url": "https://github.com/jarrodwatts"
+    "name": "kimyoungwopo",
+    "url": "https://github.com/kimyoungwopo"
   },
-  "homepage": "https://github.com/jarrodwatts/claude-delegator",
-  "repository": "https://github.com/jarrodwatts/claude-delegator",
+  "homepage": "https://github.com/kimyoungwopo/claude-delegator",
+  "repository": "https://github.com/kimyoungwopo/claude-delegator",
   "license": "MIT",
   "keywords": [
     "delegation",

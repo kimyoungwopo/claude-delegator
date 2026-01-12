@@ -2,8 +2,8 @@
 
 Multi-provider AI expert subagents for Claude Code. Seven specialists across GPT, Gemini, and Claude that can analyze AND implement—architecture, security, UI/UX, frontend, code review, and more.
 
-[![License](https://img.shields.io/github/license/jarrodwatts/claude-delegator?v=2)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/jarrodwatts/claude-delegator?v=2)](https://github.com/jarrodwatts/claude-delegator/stargazers)
+[![License](https://img.shields.io/github/license/kimyoungwopo/claude-delegator?v=2)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/kimyoungwopo/claude-delegator?v=2)](https://github.com/kimyoungwopo/claude-delegator/stargazers)
 
 **[한국어 README](README.ko.md)**
 
@@ -27,7 +27,7 @@ gemini auth login
 
 **Step 3: Add the marketplace**
 ```
-/plugin marketplace add jarrodwatts/claude-delegator
+/plugin marketplace add kimyoungwopo/claude-delegator
 ```
 
 **Step 4: Install the plugin**
@@ -186,7 +186,7 @@ Expert prompts live in `prompts/`. Edit these to customize expert behavior for y
 ## Development
 
 ```bash
-git clone https://github.com/jarrodwatts/claude-delegator
+git clone https://github.com/kimyoungwopo/claude-delegator
 cd claude-delegator
 
 # Build Gemini MCP server
@@ -217,4 +217,4 @@ MIT — see [LICENSE](LICENSE)
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jarrodwatts/claude-delegator&type=Date&v=2)](https://star-history.com/#jarrodwatts/claude-delegator&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=kimyoungwopo/claude-delegator&type=Date&v=2)](https://star-history.com/#kimyoungwopo/claude-delegator&Date)

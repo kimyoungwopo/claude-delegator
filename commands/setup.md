@@ -217,12 +217,12 @@ Options: "Yes, star the repo" / "No thanks"
 
 **If yes**: Check if `gh` CLI is available and run:
 ```bash
-gh api -X PUT /user/starred/jarrodwatts/claude-delegator
+gh api -X PUT /user/starred/kimyoungwopo/claude-delegator
 ```
 
 If `gh` is not available or the command fails, provide the manual link:
 ```
-https://github.com/jarrodwatts/claude-delegator
+https://github.com/kimyoungwopo/claude-delegator
 ```
 
 **If no**: Thank them and complete setup without starring.
