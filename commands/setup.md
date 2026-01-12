@@ -61,45 +61,45 @@ ls ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js 2>/dev/null || 
 cd ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server && npm install && npm run build
 ```
 
-## Step 4: Read Current Settings
+## Step 4: Check .mcp.json Configuration
+
+Claude Code loads MCP servers from the `.mcp.json` file in the plugin root directory.
 
 ```bash
-cat ~/.claude/settings.json 2>/dev/null || echo "{}"
+cat ${CLAUDE_PLUGIN_ROOT}/.mcp.json 2>/dev/null || echo "MCP_CONFIG_MISSING"
 ```
 
-## Step 5: Configure MCP Servers
+### If Missing or Incorrect
 
-Merge into `~/.claude/settings.json`:
+The `.mcp.json` file should already exist in the plugin. If it's missing, create it:
 
-```json
+```bash
+cat > ${CLAUDE_PLUGIN_ROOT}/.mcp.json << 'EOF'
 {
-  "mcpServers": {
-    "codex": {
-      "type": "stdio",
-      "command": "codex",
-      "args": ["-m", "gpt-5.2-codex", "mcp-server"]
-    },
-    "gemini": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
-    }
+  "codex": {
+    "command": "codex",
+    "args": ["-m", "gpt-5.2-codex", "mcp-server"]
+  },
+  "gemini": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
   }
 }
+EOF
 ```
 
-**CRITICAL**:
-- Replace `${CLAUDE_PLUGIN_ROOT}` with actual plugin path
-- Merge with existing settings, don't overwrite
-- Preserve any existing `mcpServers` entries
+**IMPORTANT**:
+- Claude Code reads MCP configuration from `.mcp.json` in the plugin directory
+- NOT from `~/.claude/settings.json` (legacy approach, no longer works)
+- `${CLAUDE_PLUGIN_ROOT}` is automatically resolved by Claude Code
 
-## Step 6: Install Orchestration Rules
+## Step 5: Install Orchestration Rules
 
 ```bash
 mkdir -p ~/.claude/rules/delegator && cp ${CLAUDE_PLUGIN_ROOT}/rules/*.md ~/.claude/rules/delegator/
 ```
 
-## Step 7: Verify Installation
+## Step 6: Verify Installation
 
 Run these checks and report results:
 
@@ -110,26 +110,23 @@ codex --version 2>&1 | head -1 || echo "Not installed"
 # Check 2: Gemini CLI version
 gemini --version 2>&1 | head -1 || echo "Not installed"
 
-# Check 3: Codex MCP configured
-cat ~/.claude/settings.json | jq -r '.mcpServers.codex.command // "Not configured"' 2>/dev/null
+# Check 3: .mcp.json exists
+ls ${CLAUDE_PLUGIN_ROOT}/.mcp.json 2>/dev/null && echo "Configured" || echo "Not configured"
 
-# Check 4: Gemini MCP configured
-cat ~/.claude/settings.json | jq -r '.mcpServers.gemini.command // "Not configured"' 2>/dev/null
-
-# Check 5: Gemini server built
+# Check 4: Gemini server built
 ls ${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js 2>/dev/null && echo "Built" || echo "Not built"
 
-# Check 6: Rules installed (count files)
+# Check 5: Rules installed (count files)
 ls ~/.claude/rules/delegator/*.md 2>/dev/null | wc -l
 
-# Check 7: Codex auth status
+# Check 6: Codex auth status
 codex login status 2>&1 | head -1 || echo "Not authenticated"
 
-# Check 8: Gemini auth status
+# Check 7: Gemini auth status
 gemini auth status 2>&1 | head -1 || echo "Not authenticated"
 ```
 
-## Step 8: Report Status
+## Step 7: Report Status
 
 Display actual values from the checks above:
 
@@ -140,19 +137,21 @@ claude-delegator Status (Multi-Provider)
 GPT (Codex CLI)
 ───────────────────────────────────────────────────────────────
   CLI:         [✓/✗] [version or "Not installed"]
-  MCP Config:  [✓/✗] codex mcp-server
   Auth:        [✓/✗] [status - run `codex login` if needed]
 
 Gemini (CLI)
 ───────────────────────────────────────────────────────────────
   CLI:         [✓/✗] [version or "Not installed"]
   MCP Server:  [✓/✗] [Built or "Not built"]
-  MCP Config:  [✓/✗] gemini-server
   Auth:        [✓/✗] [status - run `gemini auth login` if needed]
 
 Claude (Direct)
 ───────────────────────────────────────────────────────────────
   Status:      ✓ Always available (no setup needed)
+
+MCP Configuration
+───────────────────────────────────────────────────────────────
+  .mcp.json:   [✓/✗] ${CLAUDE_PLUGIN_ROOT}/.mcp.json
 
 Rules
 ───────────────────────────────────────────────────────────────
@@ -163,7 +162,7 @@ Rules
 
 If any check fails, report the specific issue and how to fix it.
 
-## Step 9: Final Instructions
+## Step 8: Final Instructions
 
 ```
 Setup complete!
@@ -209,7 +208,7 @@ Provider is auto-detected based on task type.
 Explicit: "GPT로 아키텍처 분석해줘" or "Gemini로 디자인 리뷰해줘"
 ```
 
-## Step 10: Ask About Starring
+## Step 9: Ask About Starring
 
 Use AskUserQuestion to ask the user if they'd like to star the repository on GitHub to support the project.
 

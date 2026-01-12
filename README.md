@@ -40,6 +40,10 @@ gemini auth login
 /claude-delegator:setup
 ```
 
+**Step 6: Restart Claude Code**
+
+MCP servers are loaded on startup. Restart Claude Code to activate the `codex` and `gemini` tools.
+
 Done! Claude now routes complex tasks to the right AI expert automatically.
 
 ---
@@ -126,26 +130,24 @@ Every expert supports two modes based on the task:
 | **Advisory** | `read-only` | Analysis, recommendations, reviews |
 | **Implementation** | `workspace-write` | Making changes, fixing issues |
 
-### Manual MCP Setup
+### How MCP Servers Are Configured
 
-If `/setup` doesn't work, manually add to `~/.claude/settings.json`:
+Claude Code loads MCP servers from the `.mcp.json` file in the plugin directory. This file is included with the plugin:
 
 ```json
 {
-  "mcpServers": {
-    "codex": {
-      "type": "stdio",
-      "command": "codex",
-      "args": ["-m", "gpt-5.2-codex", "mcp-server"]
-    },
-    "gemini": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/claude-delegator/mcp-servers/gemini-server/dist/index.js"]
-    }
+  "codex": {
+    "command": "codex",
+    "args": ["-m", "gpt-5.2-codex", "mcp-server"]
+  },
+  "gemini": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
   }
 }
 ```
+
+> **Note:** The `settings.json` approach (`~/.claude/settings.json` with `mcpServers`) is deprecated and no longer works. MCP configuration must be in `.mcp.json`.
 
 ### Customizing Expert Prompts
 
@@ -176,10 +178,19 @@ Expert prompts live in `prompts/`. Edit these to customize expert behavior for y
 
 | Issue | Solution |
 |-------|----------|
-| MCP server not found | Restart Claude Code after setup |
+| MCP tools not available | Restart Claude Code after setup |
+| `mcp__codex__codex` not found | Check `.mcp.json` exists in plugin directory |
 | Codex not authenticated | Run `codex login` |
 | Gemini not authenticated | Run `gemini auth login` |
 | Expert not triggered | Try explicit: "Ask GPT to..." or "Use Gemini for..." |
+
+### Verifying MCP Configuration
+
+After restarting Claude Code, you should see `codex` and `gemini` MCP tools available. If not:
+
+1. Check that `.mcp.json` exists in the plugin directory
+2. Verify Gemini MCP server is built: `ls ~/.claude/plugins/cache/.../mcp-servers/gemini-server/dist/index.js`
+3. Check Claude Code debug logs: `~/.claude/debug/latest`
 
 ---
 

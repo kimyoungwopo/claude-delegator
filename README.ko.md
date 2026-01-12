@@ -40,6 +40,10 @@ gemini auth login
 /claude-delegator:setup
 ```
 
+**Step 6: Claude Code 재시작**
+
+MCP 서버는 시작 시 로드됩니다. `codex`와 `gemini` 도구를 활성화하려면 Claude Code를 재시작하세요.
+
 완료! 이제 Claude가 복잡한 작업을 적절한 AI 전문가에게 자동으로 라우팅합니다.
 
 ---
@@ -126,26 +130,24 @@ Claude: "분석 결과, 3가지 접근성 이슈를 발견했습니다..."
 | **Advisory** | `read-only` | 분석, 추천, 리뷰 |
 | **Implementation** | `workspace-write` | 변경, 수정 작업 |
 
-### 수동 MCP 설정
+### MCP 서버 설정 방식
 
-`/setup`이 작동하지 않으면 `~/.claude/settings.json`에 직접 추가하세요:
+Claude Code는 플러그인 디렉토리의 `.mcp.json` 파일에서 MCP 서버를 로드합니다. 이 파일은 플러그인에 포함되어 있습니다:
 
 ```json
 {
-  "mcpServers": {
-    "codex": {
-      "type": "stdio",
-      "command": "codex",
-      "args": ["-m", "gpt-5.2-codex", "mcp-server"]
-    },
-    "gemini": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/claude-delegator/mcp-servers/gemini-server/dist/index.js"]
-    }
+  "codex": {
+    "command": "codex",
+    "args": ["-m", "gpt-5.2-codex", "mcp-server"]
+  },
+  "gemini": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/gemini-server/dist/index.js"]
   }
 }
 ```
+
+> **참고:** `settings.json` 방식(`~/.claude/settings.json`의 `mcpServers`)은 더 이상 작동하지 않습니다. MCP 설정은 반드시 `.mcp.json`에 있어야 합니다.
 
 ### 전문가 프롬프트 커스터마이징
 
@@ -159,6 +161,7 @@ Claude: "분석 결과, 3가지 접근성 이슈를 발견했습니다..."
 |-----------|------|------|
 | **GPT** | `npm install -g @openai/codex` | `codex login` |
 | **Gemini** | `npm install -g @google/gemini-cli` | `gemini auth login` |
+| **Claude** | 내장 | 필요 없음 |
 
 ---
 
@@ -175,10 +178,19 @@ Claude: "분석 결과, 3가지 접근성 이슈를 발견했습니다..."
 
 | 문제 | 해결 방법 |
 |------|----------|
-| MCP 서버를 찾을 수 없음 | 설정 후 Claude Code 재시작 |
+| MCP 도구 사용 불가 | 설정 후 Claude Code 재시작 |
+| `mcp__codex__codex`를 찾을 수 없음 | 플러그인 디렉토리에 `.mcp.json` 파일 존재 확인 |
 | Codex 인증 안됨 | `codex login` 실행 |
 | Gemini 인증 안됨 | `gemini auth login` 실행 |
 | 전문가 트리거 안됨 | 명시적으로: "GPT한테 물어봐" 또는 "Gemini로 해줘" |
+
+### MCP 설정 확인
+
+Claude Code 재시작 후 `codex`와 `gemini` MCP 도구가 사용 가능해야 합니다. 그렇지 않다면:
+
+1. 플러그인 디렉토리에 `.mcp.json` 파일이 있는지 확인
+2. Gemini MCP 서버가 빌드되었는지 확인: `ls ~/.claude/plugins/cache/.../mcp-servers/gemini-server/dist/index.js`
+3. Claude Code 디버그 로그 확인: `~/.claude/debug/latest`
 
 ---
 
