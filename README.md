@@ -54,7 +54,6 @@ Claude gains a team of AI specialists via MCP. Each expert has a distinct specia
 | **3 AI providers** | GPT, Gemini, and Claude working together |
 | **Dual mode** | Experts can analyze (read-only) or implement (write) |
 | **Auto-routing** | Claude detects when and where to delegate |
-| **Cost-aware** | Routes to Claude (free) > Gemini (low) > GPT (higher) |
 
 ---
 
